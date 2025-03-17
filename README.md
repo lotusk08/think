@@ -1,12 +1,8 @@
-# myMarkmap
+# Think tree
 
-[myMarkmap](https://mymarkmap.forge.apps.education.fr) is a custom editor for [Markmap](https://github.com/gera2ld/markmap), built with [Svelte Kit](https://kit.svelte.dev/).
+A thinking tool, fork from [myMarkmap](https://mymarkmap.forge.apps.education.fr), using [Markmap](https://github.com/gera2ld/markmap), and built with [Svelte Kit](https://kit.svelte.dev/).
 
 [![](https://raw.githubusercontent.com/eyssette/myMarkmap/main/myMarkmap-explications.png)](https://mymarkmap.forge.apps.education.fr/#https://raw.githubusercontent.com/eyssette/mindmap/main/mindmap-default-mymarkmap.md)
-
-## TODO
-
-[TODO](https://github.com/eyssette/myMarkmap/projects/1)
 
 ## Developing
 
@@ -32,10 +28,3 @@ Deploy
 
 npm run deploy
 ```
-
-
-Push to different remotes
-
-1. Checkout to `gh-pages` branch
-2. Pull
-3. Push --all

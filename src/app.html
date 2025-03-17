@@ -1,14 +1,47 @@
 <!DOCTYPE html>
-<html lang="fr">
-	<head>
-		<title>myMarkmap</title>
-		<meta charset="utf-8" />
-		<meta name="description" content="myMarkmap est un outil en ligne libre et gratuit qui permet de créer automatiquement une carte mentale à partir d'un fichier texte en markdown" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		%sveltekit.head%
-	</head>
-	<body>
-		<div style="display: contents">%sveltekit.body%</div>
-	</body>
+<html lang="en">
+  <head>
+    <title>Think tree</title>
+    <meta charset="utf-8" />
+    <meta
+      name="description"
+      content="Thinking tool to organize ideas, brainstorm, and visualize concepts effortlessly"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.ico" />
+    <link rel="manifest" href="/manifest.json" />
+    <!-- Optional: Preload icons for better performance -->
+    <link
+      rel="icon"
+      href="/icon-512x512.png"
+      sizes="512x512"
+      type="image/png"
+    />
+    <link rel="apple-touch-icon" href="/icon-180x180.png" />
+    <!-- Theme color for browser UI -->
+    <meta name="theme-color" content="#FCFCF9" />
+    <!-- Open Graph for social sharing -->
+    <meta property="og:title" content="Think tree" />
+    <meta
+      property="og:description"
+      content="Thinking tool to organize ideas, brainstorm, and visualize concepts effortlessly"
+    />
+    <meta property="og:image" content="/icon-512x512.png" />
+    <meta property="og:url" content="https://your-vercel-url.vercel.app" />
+    <meta property="og:type" content="website" />
+    <!-- Preconnect to Font Awesome CDN -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <!-- Font Awesome CDN -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    %sveltekit.head%
+  </head>
+  <body style="background-color: #fcfcf9">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
 </html>
