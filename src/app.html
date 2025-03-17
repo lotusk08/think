@@ -27,7 +27,7 @@
       content="Thinking tool to organize ideas, brainstorm, and visualize concepts effortlessly"
     />
     <meta property="og:image" content="/icon-512x512.png" />
-    <meta property="og:url" content="https://your-vercel-url.vercel.app" />
+    <meta property="og:url" content="https://think.stevehoang.com" />
     <meta property="og:type" content="website" />
     <!-- Preconnect to Font Awesome CDN -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
@@ -39,9 +39,32 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
+    <style>
+      :root {
+        --bg-color: #fcfcf9;
+        --text-color: #333;
+        --border-color: #e0e0e0;
+        --menu-bg: rgba(255, 255, 255, 0.1);
+        --editor-bg: rgba(255, 255, 255, 0.02);
+      }
+
+      [data-theme="dark"] {
+        --bg-color: #1a1a1a;
+        --text-color: #ffffff;
+        --border-color: #404040;
+        --menu-bg: rgba(0, 0, 0, 0.2);
+        --editor-bg: rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+    </style>
     %sveltekit.head%
   </head>
-  <body style="background-color: #fcfcf9">
+  <body>
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

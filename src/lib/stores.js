@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 
+export const theme = writable("light");
 export const show = writable(false);
 export const defaultTemplate = `---
 maxWidth: 300
@@ -101,7 +102,7 @@ maxWidth: 600
   - \`\`\`automaticResize: false\`\`\` \\ to disable \\ automatic resizing
   - \`\`\`focusOnBranch: true\`\`\` \\ to focus on the clicked branch \\ and auto-close others
   - \`\`\`showMenu: false\`\`\` \\ to hide the menu
-`)
+`),
 );
 
 export const baseURL = writable("");
