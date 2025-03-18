@@ -268,15 +268,13 @@
         font-size: 14px;
         font-weight: 500;
 
-        font-family:
-            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter,
-            Ubuntu, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
     }
 
     @media screen and (max-width: 768px) {
         #menu {
             position: fixed;
-            bottom: 1.5em;
+            bottom: 1em;
             left: 50%;
             transform: translateX(-50%);
         }

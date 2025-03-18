@@ -83,15 +83,17 @@
         bottom: 4.25em;
         left: 1.75em;
         width: 40%;
-        height: 40vh;
+        height: 30vh;
         position: absolute;
         z-index: 1;
         backdrop-filter: blur(5px);
         background-color: var(--editor-bg);
     }
-    @media screen and (max-width:500px) {
+    @media screen and (max-width:768px) {
         textarea,:global(.editor) {
-            width:75vw;
+            width:85%;
+            height: 35vh;
+            bottom: 3em;
         }
     }
 
@@ -104,7 +106,7 @@
         border: 1px solid var(--border-color);
         border-radius: 8px;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        font-family: 'Lucida Grande', 'Arial', 'Source Code Pro', monospace;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
         font-size: 14px;
         letter-spacing: normal;
         line-height: 20px;

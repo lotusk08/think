@@ -18,27 +18,27 @@ maxWidth: 600
 
 ## A free and \\ open-source tool
 
-### [Sources](https://forge.apps.education.fr/myMarkmap/myMarkmap.forge.apps.education.fr) on the Forge des\\Communs Numériques Éducatifs
-### _Author_: [Cédric Eyssette](https://eyssette.forge.apps.education.fr/)
+### [Sources code](https://github.com/lotusk08/think)
+### _Author_: [Steve Hoang](https:/stevehoang.com)
 ### Built from the \\ [markmap](https://markmap.js.org/) software
 
 ## For creating \\ mind maps
 
-- Click on ✒️ in the top left to **edit** \\ your mind map (_keyboard shortcut: \`e\`_) \\ Markdown is used to create branches
+- Click on <i class="fas fa-pen"></i> in the top left to **edit** \\ your mind map (_keyboard shortcut: \`e\`_) \\ Markdown is used to create branches
   - \`# Title\` for level 1
   - \`## Subtitle\` for level 2
   - \`### Level 3\`, \`#### Level 4\` …
   - Or use a bulleted list \\ \`- Level 3\` \\ 　\`  - Level 4\` \\ \`- Level 3\` \\ (add 2 spaces before \\ to move to another level)
-- Click on 👓 to **hide** the editing window \\ and view only the mind map \\ (_keyboard shortcut: \`Escape\`)
+- Click on <i class="fas fa-eye"></i> to **hide** the editing window \\ and view only the mind map \\ (_keyboard shortcut: \`Escape\`)
 - **Save** and \\ share your \\ mind map
-  - Click on 💾 to **save** the map as an _svg_ file \\ [static image] (_keyboard shortcut: \`s\`)
-  - Click on 🌐 to **save** as an HTML file \\ [with interactivity] (_keyboard shortcut: \`h\`)
-  - Click on 🔗 to copy a **sharing link** \\ for the mind map (_keyboard shortcut: \`l\`)
+  - Click on <i class="fas fa-file-arrow-down"></i> to **save** the map as an _svg_ file \\ [static image] (_keyboard shortcut: \`s\`)
+  - Click on <i class="fas fa-file-code"></i> to **save** as an HTML file \\ [with interactivity] (_keyboard shortcut: \`h\`)
+  - Click on <i class="fas fa-link"></i> to copy a **sharing link** \\ for the mind map (_keyboard shortcut: \`l\`)
     - Add \`?m=0\` to the URL to hide the menu
   - It’s recommended to save the text \\ of your mind map somewhere so \\ you can edit it later
     - You can store your text \\ **on a forge** or on [CodiMD](https://codimd.apps.education.fr) \\ and display it with myMarkmap <!--fold-->
-      - \\ \`https://mymarkmap.vercel.app/#URL\`
-      - In case of issues: \\ \`https://mymarkmap.vercel.app/#https://corsproxy.io/%3FURL\`
+      - \\ \`https://think.stevehoang.com/#URL\`
+      - In case of issues: \\ \`https://think.stevehoang.com/#https://corsproxy.io/%3FURL\`
       - On a Gitlab instance, use a \`.gitlab-ci.yml\` file to publish the md file on a public page and use that address as the URL
 
 ## How to navigate \\ the map?
@@ -57,7 +57,7 @@ maxWidth: 600
 
 - \`**text**\`: to make text **bold**
 - \`_text_\`: to make text _italic_
-- \`[link](URL)\`: to insert a [link](https://eyssette.forge.apps.education.fr/)
+- \`[link](URL)\`: to insert a [link](https://stevehoang.com)
 - \`![](URL)\`: to insert an image
   - \`![h-25](URL)\`: to specify \\ the image height (in pixels)
 - \`\`\` \`code\` \`\`\`: To insert \`code\`
@@ -102,7 +102,7 @@ maxWidth: 600
   - \`\`\`automaticResize: false\`\`\` \\ to disable \\ automatic resizing
   - \`\`\`focusOnBranch: true\`\`\` \\ to focus on the clicked branch \\ and auto-close others
   - \`\`\`showMenu: false\`\`\` \\ to hide the menu
-`),
+`)
 );
 
 export const baseURL = writable("");
