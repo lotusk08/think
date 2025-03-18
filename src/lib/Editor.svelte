@@ -2,208 +2,141 @@
     import hljs from "highlight.js/lib/core";
     import markdown from "highlight.js/lib/languages/markdown";
     import xml from "highlight.js/lib/languages/xml";
-    import "highlight.js/styles/github.css";
+    import 'highlight.js/styles/github.css';
 
     hljs.registerLanguage("markdown", markdown);
     hljs.registerLanguage("xml", xml);
 </script>
 
 <script>
-    import { onMount } from "svelte";
-    import { show, markdownSource } from "./stores.js";
-    import url from "./url.js";
-    import { fly, fade } from "svelte/transition";
+    import {
+        onMount,
+    } from 'svelte';
+
+    import {
+        show,
+        markdownSource
+    } from './stores.js'
+    import url from './url.js';
 
     let textArea;
     let editor;
 
-    const my = (editor) => {
+    const my = editor => {
         let code = editor.textContent;
-        code = code.replace(/:(.*)_(.*?):/g, ":$1@underscore$2:");
-        code = code.replace(/:(.*)_(.*?):/g, ":$1@underscore$2:");
-        code = code.replace(/:(.*)_(.*?):/g, ":$1@underscore$2:");
+        // code = code.replace(/\n##\s/g,'\n@hash@hash ')
+        code = code.replace(/:(.*)_(.*?):/g,':$1@underscore$2:')
+        code = code.replace(/:(.*)_(.*?):/g,':$1@underscore$2:')
+        code = code.replace(/:(.*)_(.*?):/g,':$1@underscore$2:')
         code = hljs.highlight(code, {
-            language: "markdown",
-            ignoreUnescapedHTML: false,
+            language: 'markdown',
+            ignoreUnescapedHTML: false
         }).value;
-        code = code
-            .replace(
-                /\\\\/g,
-                '<span class="language-xml"><span class="hljs-tag">\\\\</span></span>',
-            )
-            .replace(
-                /<!--(.*?)-->/g,
-                '<span class="hljs-comment"><!--$1--></span>',
-            )
-            .replace(
-                /<!--(\s*?)fold(\s*?)-->/g,
-                '<span class="language-xml"><span class="hljs-special-tag"><!--$1fold$2--></span></span>',
-            );
-        code = code.replace(/@underscore/g, "_");
+        code = code.replace(/\\\\/g, '<span class="language-xml"><span class="hljs-tag">\\\\</span></span>').replace(/&lt;!--(.*?)--&gt;/g,'<span class="hljs-comment">&lt;!--$1--&gt;</span>').replace(/&lt;!--(\s*?)fold(\s*?)--&gt;/g, '<span class="language-xml"><span class="hljs-special-tag">&lt;!--$1fold$2--&gt;</span></span>');
+        // .replace(/@hash@hash\s(.*?)\n/g,'<span class="hljs-section hljs-header-2">## $1</span>\n')
+        code = code.replace(/@underscore/g,'_')
         editor.innerHTML = code;
     };
 
     let jar;
-    let hidden;
-    $: $show ? (hidden = "") : (hidden = "hidden");
+
+
+    let hidden
+    $: $show ? hidden = "" : hidden = "hidden";
+
 
     let CodeJar;
 
     onMount(async () => {
-        ({ CodeJar } = await import("codejar"));
-        jar = await CodeJar(editor, my, { history: true });
-    });
+        ({
+            CodeJar
+        } = await import("codejar"))
+        jar = await CodeJar(editor, my, {history:true});
+    })
 
-    $: if ($show == true) {
+    $: if ($show == true) {		
         setTimeout(function () {
             textArea.firstChild.focus();
         }, 0);
     }
+ 
+    $: if(jar) {jar.onUpdate(code=>
+        {if (jar.toString() != $markdownSource) {markdownSource.update(n=>code)}}
+    )}
 
-    $: if (jar) {
-        jar.onUpdate((code) => {
-            if (jar.toString() != $markdownSource) {
-                markdownSource.update((n) => code);
-            }
-        });
-    }
 </script>
 
 <div bind:this={textArea}>
     {#await CodeJar}
         <div>Editor loading...</div>
     {:then}
-        {#if $show}
-            <div
-                transition:fly={{
-                    y: 20,
-                    duration: 200,
-                    easing: (t) => --t * t * t + 1,
-                }}
-                class="editor-container"
-            >
-                <div class="editor-wrapper">
-                    <pre
-                        bind:this={editor}
-                        contenteditable="true"
-                        bind:textContent={$markdownSource}
-                        class="editor"></pre>
-                </div>
-            </div>
-        {/if}
+        <pre bind:this={editor} contenteditable="true" bind:textContent={$markdownSource} class:hidden={!$show} class="editor"></pre>
     {:catch error}
-        {#if $show}
-            <div
-                transition:fly={{
-                    y: 20,
-                    duration: 200,
-                    easing: (t) => --t * t * t + 1,
-                }}
-                class="editor-container"
-            >
-                <div class="editor-wrapper">
-                    <textarea bind:value={$markdownSource} rows="20" cols="50"
-                    ></textarea>
-                </div>
-            </div>
-        {/if}
+        <textarea bind:value={$markdownSource} rows="20" cols="50" class:hidden={!$show}></textarea>
     {/await}
 </div>
 
 <style>
-    .editor-container {
-        position: absolute;
-        bottom: 4.5em;
-        left: 1.5em;
-        width: 40%;
-        max-width: 600px;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        height: 40vh;
-    }
-
     textarea,
     :global(.editor) {
         font-size: 14px;
-        height: 50vh;
-        position: relative;
+        bottom: 4.25em;
+        left: 1.75em;
+        width: 40%;
+        height: 40vh;
+        position: absolute;
+        z-index: 1;
         backdrop-filter: blur(5px);
         background-color: var(--editor-bg);
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        border: 1px solid var(--border-color);
-        color: var(--text-color);
-        padding: 15px;
-        overflow: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
     }
-
-    @media screen and (max-width: 768px) {
-        .editor-container {
-            width: 90%;
-            bottom: 4.5em;
-            height: 50vh;
-        }
-
-        textarea,
-        :global(.editor) {
-            height: 100%;
+    @media screen and (max-width:500px) {
+        textarea,:global(.editor) {
+            width:75vw;
         }
     }
 
-    .editor-wrapper {
-        flex: 1;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        border-radius: 8px;
+    textarea,
+    :global(.hidden) {
+        visibility: hidden;
     }
 
     :global(.editor) {
-        font-family:
-            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter,
-            Ubuntu, sans-serif;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        font-family: 'Lucida Grande', 'Arial', 'Source Code Pro', monospace;
         font-size: 14px;
         letter-spacing: normal;
         line-height: 20px;
+        padding: 10px;
         tab-size: 2;
-        flex: 1;
-        margin: 0;
-        max-height: 100%;
-    }
-
-    :global(.editor):focus {
-        outline: none;
-        border-color: #007bff;
-        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15);
+        resize: horizontal!important;
     }
 
     :global(.language-xml *) {
         color: green !important;
         font-weight: 300 !important;
     }
+    
+    :global(.hljs-section) {
+        color: var(--text-color);
+        font-weight: inherit;
+    }
 
     :global(.hljs-strong) {
         font-size: 0.95em;
-    }
-
-    :global(.hljs-section .hljs-strong) {
-        color: #032f62;
+        color: var(--text-color);
     }
 
     :global(.hljs-link),
     :global(.hljs-string) {
-        color: #032f62;
+        color: var(--link-color);
         font-style: italic;
         font-size: 0.98em;
     }
 
     :global(.hljs-bullet) {
-        color: #990000;
+        color: #ff6800;
         font-weight: 700 !important;
     }
 
@@ -212,38 +145,34 @@
     }
 
     :global(.hljs-special-tag) {
-        color: #a52a2a !important;
+        color: #d360d4 !important;
     }
 
     :global(.hljs-code) {
-        color: #333 !important;
-        background-color: #ededed;
+        color: var(--text-color) !important;
+        background-color: #77777737;
     }
     :global(.hljs-code *) {
-        color: #333 !important;
+        color: var(--text-color) !important;
     }
 
     :global(.hljs-comment) {
-        color: #777 !important;
-        font-weight: 100;
-        font-size: 0.96em;
+        color: #777!important;
+        font-weight:100;
+        font-size:0.96em;
+        
     }
 
-    [data-theme="dark"] :global(.hljs-section .hljs-strong) {
-        color: #81a2be;
+    /* :global(.hljs-header-2) {
+        display:inline-block;
+        width:100%;
+        background-color:#F8F8FF;
     }
 
-    [data-theme="dark"] :global(.hljs-link),
-    [data-theme="dark"] :global(.hljs-string) {
-        color: #b5bd68;
-    }
+    :global(.hljs-header-3) {
+        display:inline-block;
+        width:100%;
+        background-color:#F8F8FF;
+    } */
 
-    [data-theme="dark"] :global(.hljs-code) {
-        color: #c5c8c6 !important;
-        background-color: #282a2e;
-    }
-
-    [data-theme="dark"] :global(.hljs-comment) {
-        color: #969896 !important;
-    }
 </style>

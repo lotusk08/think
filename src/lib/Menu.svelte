@@ -170,10 +170,10 @@
         {#if showNotification}
             <div
                 id="shareNotification"
-                in:fly={{ y: 10, duration: 1000, easing: elasticOut }}
+                in:fly={{ y: 5, duration: 1000}}
                 out:fade
             >
-                Link copied to clipboard!
+                Link copied!
             </div>
         {/if}
     </div>
@@ -235,7 +235,7 @@
     }
 
     .menu-btn i {
-        color: var(--text-color);
+        color: var(--icon-color);
         font-size: 1rem;
         transition: all 0.2s ease;
     }
@@ -245,7 +245,7 @@
     }
 
     .menu-btn:hover i {
-        color: #007bff;
+        color: var(--icon-hover);
     }
 
     .theme-toggle {
@@ -257,15 +257,17 @@
 
     #shareNotification {
         position: absolute;
-        bottom: 4em;
+        bottom: 3.5em;
         padding: 0.75em 1.25em;
-        background-color: rgba(255, 255, 255, 0.95);
-        color: #333;
-        border-radius: 50px;
+        backdrop-filter: blur(5px);
+        background-color: var(--menu-bg);
+        color: var(--text-color);
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-color);
         font-size: 14px;
         font-weight: 500;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e0e0e0;
+
         font-family:
             -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter,
             Ubuntu, sans-serif;
