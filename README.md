@@ -2,7 +2,7 @@
 
 A thinking tool, fork from [myMarkmap](https://mymarkmap.forge.apps.education.fr), using [Markmap](https://github.com/gera2ld/markmap), and built with [Svelte Kit](https://kit.svelte.dev/).
 
-[![](https://raw.githubusercontent.com/eyssette/myMarkmap/main/myMarkmap-explications.png)](https://mymarkmap.forge.apps.education.fr/#https://raw.githubusercontent.com/eyssette/mindmap/main/mindmap-default-mymarkmap.md)
+[![](think.webp)](https://think.stevehoang.com)
 
 ## Developing
 
