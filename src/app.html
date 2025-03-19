@@ -10,76 +10,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="%sveltekit.assets%/favicon.ico" />
     <link rel="manifest" href="/manifest.json" />
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/icon-180x180.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180x180.png" />
-    <link rel="apple-touch-icon-precomposed" href="/icon-180x180.png" />
     <!-- Prevent flash of incorrect theme -->
     <script>
       (function () {
         try {
-          function setTheme(isDark) {
-            const newTheme = isDark ? "dark" : "light";
-            document.documentElement.setAttribute("data-theme", newTheme);
-
-            // Update theme-color meta tags for browser UI
-            const themeColor = isDark ? "#1a1a1a" : "#FCFCF9";
-            const metaTags = document.querySelectorAll(
-              'meta[name="theme-color"]'
-            );
-            metaTags.forEach((tag) => {
-              if (
-                (!isDark && tag.media === "(prefers-color-scheme: light)") ||
-                (isDark && tag.media === "(prefers-color-scheme: dark)")
-              ) {
-                tag.setAttribute("content", themeColor);
-              }
-            });
-
-            if (
-              window.themeStore &&
-              typeof window.themeStore.set === "function"
-            ) {
-              window.themeStore.set(newTheme);
-            }
-          }
-
-          // Get saved theme or use system preference
           const savedTheme = localStorage.getItem("theme");
-          const systemDarkMode = window.matchMedia(
-            "(prefers-color-scheme: dark)"
-          );
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
+          const theme = savedTheme || systemTheme;
+          document.documentElement.setAttribute("data-theme", theme);
 
-          if (savedTheme) {
-            setTheme(savedTheme === "dark");
-          } else {
-            setTheme(systemDarkMode.matches);
-          }
-
-          // Handle system theme changes
-          function handleThemeChange(e) {
+          // Also set up initial listener for system changes if no saved preference
+          const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+          const handleThemeChange = (e) => {
             if (!localStorage.getItem("theme")) {
-              setTheme(e.matches);
-            }
-          }
+              document.documentElement.setAttribute(
+                "data-theme",
+                e.matches ? "dark" : "light"
+              );
 
-          // Safari might not support removeEventListener for matchMedia
+              // Update theme color meta tags
+              const themeColor = e.matches ? "#1a1a1a" : "#FCFCF9";
+              const metaTags = document.querySelectorAll(
+                'meta[name="theme-color"]'
+              );
+              metaTags.forEach((tag) => {
+                if (
+                  (e.matches && tag.media === "(prefers-color-scheme: dark)") ||
+                  (!e.matches &&
+                    tag.media === "(prefers-color-scheme: light)") ||
+                  !tag.media
+                ) {
+                  tag.setAttribute("content", themeColor);
+                }
+              });
+            }
+          };
+
+          // Clean up existing listeners to prevent duplicates
           try {
-            systemDarkMode.removeEventListener("change", handleThemeChange);
+            mediaQuery.removeEventListener("change", handleThemeChange);
           } catch (e) {
             console.warn("Could not remove media query listener");
           }
 
-          // Try modern event listener first
+          // Add event listener with fallback for older browsers
           try {
-            systemDarkMode.addEventListener("change", handleThemeChange);
+            mediaQuery.addEventListener("change", handleThemeChange);
           } catch (e) {
-            // Fallback for older browsers (especially Safari)
-            systemDarkMode.addListener(handleThemeChange);
+            try {
+              mediaQuery.addListener(handleThemeChange);
+            } catch (err) {
+              console.warn("Could not add media query listener:", err);
+            }
           }
-
-          // Force an initial check
-          handleThemeChange(systemDarkMode);
         } catch (e) {
           console.warn("Theme initialization failed:", e);
         }
@@ -104,7 +90,6 @@
       content="#1a1a1a"
       media="(prefers-color-scheme: dark)"
     />
-    <meta name="theme-color" content="#FCFCF9" />
     <!-- Open Graph for social sharing -->
     <meta property="og:title" content="Think tree" />
     <meta
