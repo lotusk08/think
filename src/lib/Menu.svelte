@@ -262,7 +262,7 @@
         backdrop-filter: blur(5px);
         background-color: var(--menu-bg);
         color: var(--text-color);
-        border-radius: 5px;
+        border-radius: 10px;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         border: 1px solid var(--border-color);
         font-size: 14px;
@@ -275,6 +275,13 @@
         #menu {
             position: fixed;
             bottom: 1em;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        #shareNotification {
+            position: fixed;
+            bottom: 5em;
             left: 50%;
             transform: translateX(-50%);
         }
