@@ -19,7 +19,7 @@ maxWidth: 600
 ## A free and \\ open-source tool
 
 ### [Sources code](https://github.com/lotusk08/think)
-### _Author_: [Steve Hoang](https:/stevehoang.com)
+### _Author_: [Steve Hoang](https://stevehoang.com)
 ### Built from the \\ [markmap](https://markmap.js.org/) software
 
 ## For creating \\ mind maps
