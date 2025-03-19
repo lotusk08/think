@@ -1,43 +1,65 @@
 import { writable } from "svelte/store";
 
 function createThemeStore() {
-  const { subscribe, set, update } = writable('light');
-  
-  if (typeof window !== 'undefined') {
+  const { subscribe, set, update } = writable("light");
+
+  // Define updateBrowserTheme in the outer scope so it's accessible to all methods
+  function updateBrowserTheme(theme) {
+    if (typeof window === "undefined") return;
+
+    const themeColor = theme === "dark" ? "#1a1a1a" : "#FCFCF9";
+    const metaTags = document.querySelectorAll('meta[name="theme-color"]');
+    metaTags.forEach((tag) => {
+      if (
+        (theme === "light" && tag.media === "(prefers-color-scheme: light)") ||
+        (theme === "dark" && tag.media === "(prefers-color-scheme: dark)") ||
+        !tag.media
+      ) {
+        tag.setAttribute("content", themeColor);
+      }
+    });
+  }
+
+  if (typeof window !== "undefined") {
     // Initialize theme
-    const savedTheme = localStorage.getItem('theme');
-    const systemDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
-    const initialTheme = savedTheme || (systemDarkMode.matches ? 'dark' : 'light');
-    
+    const savedTheme = localStorage.getItem("theme");
+    const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)");
+    const initialTheme =
+      savedTheme || (systemDarkMode.matches ? "dark" : "light");
+
     // Set initial theme
     set(initialTheme);
-    document.documentElement.setAttribute('data-theme', initialTheme);
-    
+    document.documentElement.setAttribute("data-theme", initialTheme);
+    updateBrowserTheme(initialTheme);
+
     // Expose theme store to window for system theme sync
     window.themeStore = { set };
-    
+
     // Handle system theme changes
     function handleThemeChange(e) {
-      if (!localStorage.getItem('theme')) {
-        const newTheme = e.matches ? 'dark' : 'light';
-        set(newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
-      }
+      const newTheme = e.matches ? "dark" : "light";
+      set(newTheme);
+      document.documentElement.setAttribute("data-theme", newTheme);
+      updateBrowserTheme(newTheme);
     }
-    
-    // Safari might not support removeEventListener for matchMedia
+
+    // Clean up any existing event listeners to prevent duplicates
     try {
-      systemDarkMode.removeEventListener('change', handleThemeChange);
+      systemDarkMode.removeEventListener("change", handleThemeChange);
     } catch (e) {
-      console.warn('Could not remove media query listener');
+      console.warn("Could not remove media query listener");
     }
 
     // Try modern event listener first
     try {
-      systemDarkMode.addEventListener('change', handleThemeChange);
+      systemDarkMode.addEventListener("change", handleThemeChange);
     } catch (e) {
       // Fallback for older browsers (especially Safari)
-      systemDarkMode.addListener(handleThemeChange);
+      try {
+        systemDarkMode.addListener(handleThemeChange);
+      } catch (err) {
+        console.warn("Could not add media query listener:", err);
+      }
     }
 
     // Force an initial check
@@ -48,69 +70,22 @@ function createThemeStore() {
     subscribe,
     set: (value) => {
       set(value);
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         if (value) {
-          localStorage.setItem('theme', value);
-          document.documentElement.setAttribute('data-theme', value);
-          
-          // Update browser UI color
-          const themeColor = value === 'dark' ? '#1a1a1a' : '#FCFCF9';
-          const metaTags = document.querySelectorAll('meta[name="theme-color"]');
-          metaTags.forEach(tag => {
-            if ((value === 'light' && tag.media === '(prefers-color-scheme: light)') ||
-                (value === 'dark' && tag.media === '(prefers-color-scheme: dark)') ||
-                !tag.media) {
-              tag.setAttribute('content', themeColor);
-            }
-          });
-        } else {
-          localStorage.removeItem('theme');
-          const systemDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
-          const systemTheme = systemDarkMode.matches ? 'dark' : 'light';
-          document.documentElement.setAttribute('data-theme', systemTheme);
-          
-          // Update browser UI color based on system theme
-          const themeColor = systemTheme === 'dark' ? '#1a1a1a' : '#FCFCF9';
-          const metaTags = document.querySelectorAll('meta[name="theme-color"]');
-          metaTags.forEach(tag => {
-            if ((systemTheme === 'light' && tag.media === '(prefers-color-scheme: light)') ||
-                (systemTheme === 'dark' && tag.media === '(prefers-color-scheme: dark)') ||
-                !tag.media) {
-              tag.setAttribute('content', themeColor);
-            }
-          });
+          document.documentElement.setAttribute("data-theme", value);
+          updateBrowserTheme(value);
         }
       }
     },
     toggle: () => {
-      update(theme => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('theme', newTheme);
-          document.documentElement.setAttribute('data-theme', newTheme);
-          
-          // Update browser UI color
-          const themeColor = newTheme === 'dark' ? '#1a1a1a' : '#FCFCF9';
-          const metaTags = document.querySelectorAll('meta[name="theme-color"]');
-          metaTags.forEach(tag => {
-            if ((newTheme === 'light' && tag.media === '(prefers-color-scheme: light)') ||
-                (newTheme === 'dark' && tag.media === '(prefers-color-scheme: dark)') ||
-                !tag.media) {
-              tag.setAttribute('content', themeColor);
-            }
-          });
+      update((theme) => {
+        const newTheme = theme === "light" ? "dark" : "light";
+        if (typeof window !== "undefined") {
+          document.documentElement.setAttribute("data-theme", newTheme);
+          updateBrowserTheme(newTheme);
         }
         return newTheme;
       });
-    },
-    reset: () => {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('theme');
-        const systemDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
-        const systemTheme = systemDarkMode.matches ? 'dark' : 'light';
-        set(systemTheme);
-        document.documentElement.setAttribute('data-theme', systemTheme);
-      }
     }
   };
 }
@@ -163,6 +138,7 @@ maxWidth: 600
   - **Alt+click** on branch text to hide it
   - \`m\` to hide or show the menu bar
   - \`r\` to disable or enable automatic resizing
+  - \`t\` to switch theme between light mode/dark mode
 
 ## More advanced \\ uses  <!--fold-->
 

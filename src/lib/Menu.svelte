@@ -21,6 +21,12 @@
     let urlToShare;
     let encodageHash;
     let menu;
+    let currentTheme;
+
+    // Subscribe to theme changes
+    theme.subscribe(value => {
+        currentTheme = value;
+    });
 
     function toggleTheme() {
         theme.toggle();
@@ -83,6 +89,9 @@
             if (event.key == "m") {
                 menuHide();
             }
+            if (event.key == "t") {
+                toggleTheme();
+            }
         } else {
             if (event.key === "Escape") {
                 menu.style.display = "flex";
@@ -138,9 +147,10 @@
                     class="theme-toggle menu-btn"
                     on:click={toggleTheme}
                     on:keydown={(e) => e.key === 'Enter' && toggleTheme()}
-                    aria-label={$theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+                    aria-label={currentTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+                    title={currentTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
                 >
-                    {#if $theme === "light"}
+                    {#if currentTheme === "light"}
                         <i class="fas fa-moon"></i>
                     {:else}
                         <i class="fas fa-sun"></i>
@@ -248,7 +258,7 @@
         color: var(--icon-hover);
     }
 
-    .theme-toggle {
+    .theme-toggle, .theme-reset {
         background: transparent;
         border: none;
         cursor: pointer;
@@ -257,12 +267,12 @@
         outline: none;
     }
 
-    .theme-toggle:focus-visible {
+    .theme-toggle:focus-visible, .theme-reset:focus-visible {
         outline: 2px solid var(--icon-hover);
         border-radius: 5px;
     }
 
-    #shareNotification {
+    #shareNotification, #themeNotification {
         position: absolute;
         bottom: 3.5em;
         padding: 0.75em 1.25em;
@@ -274,7 +284,6 @@
         border: 1px solid var(--border-color);
         font-size: 14px;
         font-weight: 500;
-
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
     }
 
@@ -286,7 +295,7 @@
             transform: translateX(-50%);
         }
         
-        #shareNotification {
+        #shareNotification, #themeNotification {
             position: fixed;
             bottom: 5em;
             left: 50%;
