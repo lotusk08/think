@@ -18,26 +18,61 @@
     <script>
       (function () {
         try {
-          const savedTheme = localStorage.getItem("theme");
-          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-            .matches
-            ? "dark"
-            : "light";
-          const theme = savedTheme || systemTheme;
-          document.documentElement.setAttribute("data-theme", theme);
-
-          // Also set up initial listener for system changes
-          const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-          mediaQuery.addEventListener("change", (e) => {
-            if (!localStorage.getItem("theme")) {
-              document.documentElement.setAttribute(
-                "data-theme",
-                e.matches ? "dark" : "light"
-              );
+          function setTheme(isDark) {
+            const newTheme = isDark ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            
+            // Update theme-color meta tags for browser UI
+            const themeColor = isDark ? '#1a1a1a' : '#FCFCF9';
+            const metaTags = document.querySelectorAll('meta[name="theme-color"]');
+            metaTags.forEach(tag => {
+              if ((!isDark && tag.media === '(prefers-color-scheme: light)') ||
+                  (isDark && tag.media === '(prefers-color-scheme: dark)')) {
+                tag.setAttribute('content', themeColor);
+              }
+            });
+            
+            if (window.themeStore && typeof window.themeStore.set === 'function') {
+              window.themeStore.set(newTheme);
             }
-          });
+          }
+
+          // Get saved theme or use system preference
+          const savedTheme = localStorage.getItem('theme');
+          const systemDarkMode = window.matchMedia('(prefers-color-scheme: dark)');
+          
+          if (savedTheme) {
+            setTheme(savedTheme === 'dark');
+          } else {
+            setTheme(systemDarkMode.matches);
+          }
+
+          // Handle system theme changes
+          function handleThemeChange(e) {
+            if (!localStorage.getItem('theme')) {
+              setTheme(e.matches);
+            }
+          }
+
+          // Safari might not support removeEventListener for matchMedia
+          try {
+            systemDarkMode.removeEventListener('change', handleThemeChange);
+          } catch (e) {
+            console.warn('Could not remove media query listener');
+          }
+
+          // Try modern event listener first
+          try {
+            systemDarkMode.addEventListener('change', handleThemeChange);
+          } catch (e) {
+            // Fallback for older browsers (especially Safari)
+            systemDarkMode.addListener(handleThemeChange);
+          }
+
+          // Force an initial check
+          handleThemeChange(systemDarkMode);
         } catch (e) {
-          console.warn("Theme initialization failed:", e);
+          console.warn('Theme initialization failed:', e);
         }
       })();
     </script>
@@ -60,6 +95,7 @@
       content="#1a1a1a"
       media="(prefers-color-scheme: dark)"
     />
+    <meta name="theme-color" content="#FCFCF9" />
     <!-- Open Graph for social sharing -->
     <meta property="og:title" content="Think tree" />
     <meta
