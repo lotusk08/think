@@ -1,7 +1,7 @@
 <div id="abc">
   <ul align="center" style="list-style: none;">
 	<summary>
-	  <h1>[Think tree](https://think.stevehoang.com)</h1>
+	  <h1>Think tree</h1>
 	</summary>
   </ul>
 </div>
