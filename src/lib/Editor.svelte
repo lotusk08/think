@@ -93,7 +93,7 @@
         textarea,:global(.editor) {
             width:85%;
             height: 35vh;
-            bottom: 3.75em;
+            bottom: 3em;
         }
     }
 

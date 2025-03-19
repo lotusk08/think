@@ -10,6 +10,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="%sveltekit.assets%/favicon.ico" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180x180.png" />
+    <link rel="apple-touch-icon-precomposed" href="/icon-180x180.png" />
+    <!-- Prevent flash of incorrect theme -->
+    <script>
+      (function () {
+        try {
+          const savedTheme = localStorage.getItem("theme");
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
+          const theme = savedTheme || systemTheme;
+          document.documentElement.setAttribute("data-theme", theme);
+
+          // Also set up initial listener for system changes
+          const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+          mediaQuery.addEventListener("change", (e) => {
+            if (!localStorage.getItem("theme")) {
+              document.documentElement.setAttribute(
+                "data-theme",
+                e.matches ? "dark" : "light"
+              );
+            }
+          });
+        } catch (e) {
+          console.warn("Theme initialization failed:", e);
+        }
+      })();
+    </script>
     <!-- Optional: Preload icons for better performance -->
     <link
       rel="icon"
@@ -74,7 +105,13 @@
       body {
         background-color: var(--bg-color);
         color: var(--text-color);
-        transition: background-color 0.3s ease, color 0.3s ease;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+
+      /* Add transitions for all themed elements */
+      * {
+        transition: background-color 0.2s ease, color 0.2s ease,
+          border-color 0.2s ease, box-shadow 0.2s ease;
       }
     </style>
     %sveltekit.head%

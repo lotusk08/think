@@ -1,6 +1,52 @@
 import { writable } from "svelte/store";
 
-export const theme = writable("light");
+function createThemeStore() {
+  const { subscribe, set, update } = writable('light');
+  
+  if (typeof window !== 'undefined') {
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme');
+    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const initialTheme = savedTheme || systemTheme;
+    
+    // Set initial theme
+    set(initialTheme);
+    document.documentElement.setAttribute('data-theme', initialTheme);
+    
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', (e) => {
+      if (!localStorage.getItem('theme')) {
+        const newTheme = e.matches ? 'dark' : 'light';
+        set(newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
+      }
+    });
+  }
+
+  return {
+    subscribe,
+    set: (value) => {
+      set(value);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('theme', value);
+        document.documentElement.setAttribute('data-theme', value);
+      }
+    },
+    toggle: () => {
+      update(theme => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('theme', newTheme);
+          document.documentElement.setAttribute('data-theme', newTheme);
+        }
+        return newTheme;
+      });
+    }
+  };
+}
+
+export const theme = createThemeStore();
 export const show = writable(false);
 export const defaultTemplate = `---
 maxWidth: 300
@@ -35,7 +81,7 @@ maxWidth: 600
   - Click on <i class="fas fa-file-code"></i> to **save** as an HTML file \\ [with interactivity] (_keyboard shortcut: \`h\`)
   - Click on <i class="fas fa-link"></i> to copy a **sharing link** \\ for the mind map (_keyboard shortcut: \`l\`)
     - Add \`?m=0\` to the URL to hide the menu
-  - It’s recommended to save the text \\ of your mind map somewhere so \\ you can edit it later
+  - It's recommended to save the text \\ of your mind map somewhere so \\ you can edit it later
     - You can store your text \\ **on a forge** or on [CodiMD](https://codimd.apps.education.fr) \\ and display it with myMarkmap <!--fold-->
       - \\ \`https://think.stevehoang.com/#URL\`
       - In case of issues: \\ \`https://think.stevehoang.com/#https://corsproxy.io/%3FURL\`
@@ -75,7 +121,7 @@ maxWidth: 600
   - This branch is hidden by default!
   - This one too!
 - \`:code_emoji:\`: to insert an emoji code [:link:](https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json)
-- \`{{hidden part}}\` to hide part \\ of the text: here’s an example with a {{passage}} hidden \\ (click to show/hide)
+- \`{{hidden part}}\` to hide part \\ of the text: here's an example with a {{passage}} hidden \\ (click to show/hide)
 
 ### A **header** (YAML) \\ for advanced \\ configuration options <!--fold-->
 

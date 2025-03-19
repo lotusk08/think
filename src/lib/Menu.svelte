@@ -14,6 +14,7 @@
     import { fade, fly, slide } from "svelte/transition";
     import { quintOut, elasticOut } from "svelte/easing";
     import { saveAs } from "file-saver-es";
+    import { onMount } from "svelte";
 
     export let showMenu;
 
@@ -22,8 +23,7 @@
     let menu;
 
     function toggleTheme() {
-        $theme = $theme === "light" ? "dark" : "light";
-        document.body.setAttribute("data-theme", $theme);
+        theme.toggle();
     }
 
     function menuEdit() {
@@ -109,7 +109,6 @@
 </script>
 
 <svelte:window on:keydown={handleKeydown} on:beforeunload={beforeunload} />
-
 {#if showMenu}
     <div
         class="menu-container"
@@ -118,51 +117,47 @@
         <nav id="menu" bind:this={menu} class:edit-mode={$show}>
             <div class="menu-items">
                 {#if $show}
-                    <a href="#edit" on:click|preventDefault={menuView}>
-                        <span class="menu-btn">
-                            <i class="fas fa-eye"></i>
-                        </span>
-                    </a>
+                    <button href="#edit" on:click|preventDefault={menuView} class="menu-btn">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 {:else}
-                    <a href="#edit" on:click|preventDefault={menuEdit}>
-                        <span class="menu-btn">
-                            <i class="fas fa-pen"></i>
-                        </span>
-                    </a>
+                    <button href="#edit" on:click|preventDefault={menuEdit} class="menu-btn">
+                        <i class="fas fa-pen"></i>
+                    </button>
                 {/if}
-                <a href="#saveHTML" on:click|preventDefault={menuSaveAsHtml}>
-                    <span class="menu-btn"
-                        ><i class="fas fa-file-code"></i></span
-                    >
-                </a>
-                <a href="#saveSVG" on:click|preventDefault={menuSaveAsSvg}>
-                    <span class="menu-btn"
-                        ><i class="fas fa-file-arrow-down"></i></span
-                    >
-                </a>
-                <a href="#share" on:click|preventDefault={menuShare}>
-                    <span class="menu-btn"><i class="fas fa-link"></i></span>
-                </a>
-                <span class="theme-toggle menu-btn" on:click={toggleTheme}>
+                <button href="#saveHTML" on:click|preventDefault={menuSaveAsHtml} class="menu-btn">
+                    <i class="fas fa-file-code"></i>
+                </button>
+                <button href="#saveSVG" on:click|preventDefault={menuSaveAsSvg} class="menu-btn">
+                    <i class="fas fa-file-arrow-down"></i>
+                </button>
+                <button href="#share" on:click|preventDefault={menuShare} class="menu-btn">
+                    <i class="fas fa-link"></i>
+                </button>
+                <button
+                    class="theme-toggle menu-btn"
+                    on:click={toggleTheme}
+                    on:keydown={(e) => e.key === 'Enter' && toggleTheme()}
+                    aria-label={$theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+                >
                     {#if $theme === "light"}
                         <i class="fas fa-moon"></i>
                     {:else}
                         <i class="fas fa-sun"></i>
                     {/if}
-                </span>
+                </button>
             </div>
 
             <div class="eraser-container">
                 {#if $show}
-                    <a
+                    <button
                         href="#reset"
                         on:click|preventDefault={menuReset}
                         transition:fade={{ duration: 200 }}
+                        class="menu-btn"
                     >
-                        <span class="menu-btn"
-                            ><i class="fas fa-eraser"></i></span
-                        >
-                    </a>
+                        <i class="fas fa-eraser"></i>
+                    </button>
                 {/if}
             </div>
         </nav>
@@ -192,18 +187,20 @@
 
     #menu {
         display: flex;
-        padding: 0.1rem 0.75rem;
-        border-radius: 10px;
+        padding: 0.35rem 1rem;
+        gap: 0.25rem;
+        border-radius: 8px;
         background-color: var(--menu-bg);
         backdrop-filter: blur(5px);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         border: 1px solid var(--border-color);
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
 
     .menu-items {
         display: flex;
-        gap: 0.5em;
+        gap: 0.5rem;
+        align-items: center;
     }
 
     .eraser-container {
@@ -219,7 +216,7 @@
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     }
 
-    #menu a {
+    #menu button {
         text-decoration: none;
     }
 
@@ -227,21 +224,24 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        width: 2.5em;
-        height: 2.5em;
+        width: 2.25em;
+        height: 2.25em;
         border: none;
         background-color: transparent;
+        border-radius: 6px;
         transition: all 0.2s ease;
+        cursor: pointer;
     }
 
     .menu-btn i {
         color: var(--icon-color);
-        font-size: 1rem;
+        font-size: 0.85rem;
         transition: all 0.2s ease;
     }
 
     .menu-btn:hover {
         transform: translateY(-2px);
+        background-color: var(--editor-bg);
     }
 
     .menu-btn:hover i {
@@ -253,6 +253,13 @@
         border: none;
         cursor: pointer;
         padding: 0;
+        color: inherit;
+        outline: none;
+    }
+
+    .theme-toggle:focus-visible {
+        outline: 2px solid var(--icon-hover);
+        border-radius: 5px;
     }
 
     #shareNotification {
