@@ -189,6 +189,9 @@
         position: absolute;
         bottom: 1.5em;
         left: 1.5em;
+        background-color: var(--menu-bg);
+        backdrop-filter: blur(5px);
+        border-radius: 8px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -200,8 +203,6 @@
         padding: 0.35rem 1rem;
         gap: 0.25rem;
         border-radius: 8px;
-        background-color: var(--menu-bg);
-        backdrop-filter: blur(5px);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         border: 1px solid var(--border-color);
         transition: all 0.2s ease;

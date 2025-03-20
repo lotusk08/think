@@ -123,6 +123,7 @@
 			paddingX: 20,
 			autoFit: false,
 			initialExpandLevel: initialExpandLevel,
+			paddingY: 20,
 		}
 		const optionsJSON = deriveOptions({
 			color: getComputedStyle(document.documentElement).getPropertyValue('--mindmap-branch-colors').split(',').map(c => c.trim()),
@@ -287,7 +288,7 @@
 
 	function getBBox(element) {
 		const {x, y, width, height} = element.getBBox();
-		return {x: x, y: y, w: width, h: height};
+		return {x: x - 20, y: y - 20, w: width + 40, h: height + 40};
 	}
 
 
@@ -295,7 +296,7 @@
 		const boundingBox = getBBox(mindmap)
 		mm = mm.replace(/<br>/g, '<br/>')
 		mm = mm.replace(/\n/g, ' ')
-		mm = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg id="markmap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="' + mindmap.className['baseVal'] + '" style="width:100%; height:100%;" viewBox="' + boundingBox.x + ' ' + (boundingBox.y-5) + ' ' + (boundingBox.w) + ' ' + (boundingBox.h+30) + '">'+'<use xlink:href=""><title>'+title+'</title></use>'+'<desc>'+description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&lt;')+'</desc>'+ mm.replace(/<title>.*<\/title>/,'') + '</svg>'
+		mm = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg id="markmap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="' + mindmap.className['baseVal'] + '" style="width:100%; height:100%;" viewBox="' + boundingBox.x + ' ' + (boundingBox.y) + ' ' + (boundingBox.w) + ' ' + (boundingBox.h) + '">'+'<use xlink:href=""><title>'+title+'</title></use>'+'<desc>'+description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&lt;')+'</desc>'+ mm.replace(/<title>.*<\/title>/,'') + '</svg>'
 		return mm;
 	}
 
@@ -437,8 +438,8 @@
 	}
 
 	function handleKeydown(event) {
-		if (!$show && event.key === 'r') {
-			automaticResize = automaticResize ? false : true;
+		if (!$show && event.key === 'r' && event.target.tagName === 'BODY') {
+			automaticResize = !automaticResize;
 			if(automaticResize) {
 				setTimeout(() => mm.fit(), 50);
 			}
@@ -449,18 +450,19 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div bind:clientWidth={w} bind:clientHeight={h} style="width:100vw; height:100vh">
+<div bind:clientWidth={w} bind:clientHeight={h} style="width:100vw; height:100vh" on:click={() => { if (automaticResize) setTimeout(() => mm.fit(), 50); }}>
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<svg id="markmap" bind:this={mindmap} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-		style="width:100%; height:100%" on:click={handleHide}>
+		style="width:100%; height:100%; overflow: visible;" on:click={handleHide}>
 	</svg>
 </div>
 <style>
-
 	svg {
 		z-index: 0;
 		position: absolute;
 		top: 0;
+		left: 0;
+		overflow: visible;
 	}
 
 	@media print {
