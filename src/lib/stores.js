@@ -86,7 +86,7 @@ function createThemeStore() {
         }
         return newTheme;
       });
-    }
+    },
   };
 }
 
@@ -126,18 +126,19 @@ maxWidth: 600
   - Click on <i class="fas fa-link"></i> to copy a **sharing link** \\ for the mind map (_keyboard shortcut: \`l\`)
     - Add \`?m=0\` to the URL to hide the menu
   - It's recommended to save the text \\ of your mind map somewhere so \\ you can edit it later
-    - You can store your text \\ **on a forge** or on [CodiMD](https://codimd.apps.education.fr) \\ and display it with myMarkmap <!--fold-->
+    - You can store your text \\ on **Obsidian** or on [Stackedit](https://stackedit.io) \\ and display it with Think tree <!--fold-->
       - \\ \`https://think.stevehoang.com/#URL\`
       - In case of issues: \\ \`https://think.stevehoang.com/#https://corsproxy.io/%3FURL\`
       - On a Gitlab instance, use a \`.gitlab-ci.yml\` file to publish the md file on a public page and use that address as the URL
 
 ## How to navigate \\ the map?
 - \\\\ Click on the **circles** at the intersection \\ of branches to show or hide the rest
-  - \\ **Alt+click** on a circle to display \\ only that specific branch
+  - \\ **Command+click** on a circle to display \\ only that specific branch
 - **Other shortcuts**
-  - **Alt+click** on branch text to hide it
+  - **Command+click** on branch text to hide it
   - \`m\` to hide or show the menu bar
   - \`r\` to disable or enable automatic resizing
+    - Double-taps every where in mindmap on mobile to disable automatic resizing
   - \`t\` to switch theme between light mode/dark mode
 
 ## More advanced \\ uses  <!--fold-->
@@ -165,7 +166,7 @@ maxWidth: 600
 - \`<!--fold-->\` at the end of a line to hide \\ sub-branches by default: \\ click the circle to show the rest <!--fold-->
   - This branch is hidden by default!
   - This one too!
-- \`:code_emoji:\`: to insert an emoji code [:link:](https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json)
+- \`:code_emoji:\`: to insert an emoji code [:heart:](https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json)
 - \`{{hidden part}}\` to hide part \\ of the text: here's an example with a {{passage}} hidden \\ (click to show/hide)
 
 ### A **header** (YAML) \\ for advanced \\ configuration options <!--fold-->
