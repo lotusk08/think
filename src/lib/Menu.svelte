@@ -189,9 +189,6 @@
         position: absolute;
         bottom: 1.5em;
         left: 1.5em;
-        border-radius: 8px;
-        backdrop-filter: blur(5px);
-        background-color: var(--menu-bg);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -203,9 +200,10 @@
         padding: 0.35rem 1rem;
         gap: 0.25rem;
         border-radius: 8px;
+        backdrop-filter: blur(5px);
+        background-color: var(--menu-bg);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         border: 1px solid var(--border-color);
-        transition: all 0.2s ease;
     }
 
     .menu-items {
@@ -289,7 +287,7 @@
     }
 
     @media screen and (max-width: 768px) {
-        #menu, .menu-container {
+        #menu {
             position: fixed;
             bottom: 1em;
             left: 50%;

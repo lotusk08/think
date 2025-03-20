@@ -34,12 +34,14 @@
 	let marginLeftBlockquote='';
 	let nodeTitle;
 	let description;
+	let isMobile = false;
+	let lastTapTime = 0;
 	$: description = $markdownSource;
 
 	onMount(() => {
-		const isMobile =
-	/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-		navigator.userAgent
+		isMobile =
+		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+			navigator.userAgent
 		);
 		automaticResize = isMobile ? false : true;
 	})
@@ -154,7 +156,7 @@
 			} 
 			svg .hide:hover {
 				opacity: 0.8;
-			}
+			} 
 			svg .hide img {opacity:0} 
 			svg img[alt=h-25]{height:25px} 
 			svg img[alt=h-50]{height:50px} 
@@ -228,62 +230,91 @@
 	function trimFromLastDot(str) {
 		const lastDotIndex = str.lastIndexOf('.');
 		return lastDotIndex !== -1 ? str.substring(0, lastDotIndex) : str;
-}
+	}
+
+	function handleDoubleTap(event) {
+		// Check if we're on mobile and should process this as a double-tap
+		if (isMobile) {
+			const currentTime = new Date().getTime();
+			const tapLength = currentTime - lastTapTime;
+			
+			if (tapLength < 500 && tapLength > 0) {
+				// Double tap detected
+				event.preventDefault();
+				toggleAutomaticResize();
+				return true;
+			}
+			lastTapTime = currentTime;
+		}
+		return false;
+	}
+
+	function toggleAutomaticResize() {
+		automaticResize = !automaticResize;
+		if (automaticResize) {
+			setTimeout(() => mm.fit(), 50);
+		}
+	}
 
 	function handleHide(event) {
-			let targetElement = event.target
-			const elementType = targetElement.tagName
-			let searchDivCount = 0;
-			if (elementType == 'SVG') {
+		// First check for double tap on mobile
+		if (handleDoubleTap(event)) {
+			return;
+		}
+
+		let targetElement = event.target
+		const elementType = targetElement.tagName
+		let searchDivCount = 0;
+		if (elementType == 'SVG') {
+			return
+		} else {
+			if(elementType =='circle') {
+				// On gère à nouveau l'ouverture des liens dans un autre onglet si on utilise cette option dans le yaml
+				if(openLinksInNewTab) {
+					setLinksToOpenInNewTab()
+				}
+				// On gère à nouveau la conversion en lignes droites si besoin
+				if (curves === false) {
+					debouncedCurvesToLines();
+				}
+			}
+			if (elementType =='circle' && (event.altKey || focusOnBranch)) {
+				const parentElement = targetElement.parentElement;
+				const dataPathParentElement = parentElement.getAttribute('data-path');
+				const sameLevelBranches = trimFromLastDot(dataPathParentElement)
+				const unfoldedBranches = mindmap.querySelectorAll('g[data-path^="'+sameLevelBranches+'."]:not(.markmap-fold)')
+				const circleFill = targetElement.getAttribute('fill')
+				for (const branch of unfoldedBranches) {
+					const circle = branch.querySelector('circle');
+					if (circle) {
+						circle.dispatchEvent(new MouseEvent("click"));
+					}
+				}
+				if(!focusOnBranch || circleFill != 'rgb(255, 255, 255)') {
+					if(dataPathParentElement != "1") {
+						targetElement.dispatchEvent(new MouseEvent("click"));
+					}
+				}
+				if(automaticResize) {
+					setTimeout(() => mm.fit(), 50);
+				}
 				return
-			} else {
-				if(elementType =='circle') {
-					// On gère à nouveau l'ouverture des liens dans un autre onglet si on utilise cette option dans le yaml
-					if(openLinksInNewTab) {
-						setLinksToOpenInNewTab()
-					}
-					// On gère à nouveau la conversion en lignes droites si besoin
-					if (curves === false) {
-						debouncedCurvesToLines();
-					}
-				}
-				if (elementType =='circle' && (event.altKey || focusOnBranch)) {
-					const parentElement = targetElement.parentElement;
-					const dataPathParentElement = parentElement.getAttribute('data-path');
-					const sameLevelBranches = trimFromLastDot(dataPathParentElement)
-					const unfoldedBranches = mindmap.querySelectorAll('g[data-path^="'+sameLevelBranches+'."]:not(.markmap-fold)')
-					const circleFill = targetElement.getAttribute('fill')
-					for (const branch of unfoldedBranches) {
-						const circle = branch.querySelector('circle');
-						if (circle) {
-							circle.dispatchEvent(new MouseEvent("click"));
-						}
-					}
-					if(!focusOnBranch || circleFill != 'rgb(255, 255, 255)') {
-						if(dataPathParentElement != "1") {
-							targetElement.dispatchEvent(new MouseEvent("click"));
-						}
-					}
-					if(automaticResize) {
-						setTimeout(() => mm.fit(), 50);
-					}
-					return
-				}
-				while (targetElement && targetElement.tagName !== 'DIV' && searchDivCount < 5) {
-					targetElement = targetElement.parentElement;
-					searchDivCount++;
-				}
 			}
-			if (targetElement.tagName == 'DIV') {
-				if (event.altKey) {
-					targetElement.classList.toggle('hide'); }
-				else {
-					targetElement.classList.remove('hide');
-				}
+			while (targetElement && targetElement.tagName !== 'DIV' && searchDivCount < 5) {
+				targetElement = targetElement.parentElement;
+				searchDivCount++;
 			}
-			if(automaticResize) {
-				setTimeout(() => mm.fit(), 50);
+		}
+		if (targetElement.tagName == 'DIV') {
+			if (event.altKey) {
+				targetElement.classList.toggle('hide'); }
+			else {
+				targetElement.classList.remove('hide');
 			}
+		}
+		if(automaticResize) {
+			setTimeout(() => mm.fit(), 50);
+		}
 	}
 
 	function getBBox(element) {
@@ -313,112 +344,112 @@
 		let templateHtml = `<!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>${title}</title>
-    <style>
-        :root {
-            --mindmap-code-bg: #f5f5f5;
-            --mindmap-code-color: #333;
-            --mindmap-blockquote-border: #aaa;
-            --mindmap-hide-bg: rgba(200, 200, 200, 0.85);
-            --text-color: #494949;
-            --bg-color: #fcfcf9;
-            --code-padding: 0.25em;
-            --code-font-size: calc(1em - 2px);
-            --code-border-radius: 2px;
-        }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --mindmap-code-bg: #2d2d2d;
-                --mindmap-code-color: #e0e0e0;
-                --mindmap-blockquote-border: #555;
-                --mindmap-hide-bg: rgba(80, 80, 80, 0.85);
-                --text-color: #e7e7e7;
-                --bg-color: #1a1a1a;
-            }
-        }
-        [data-theme="dark"] {
-            --mindmap-code-bg: #2d2d2d;
-            --mindmap-code-color: #e0e0e0;
-            --mindmap-blockquote-border: #555;
-            --mindmap-hide-bg: rgba(80, 80, 80, 0.85);
-            --text-color: #e7e7e7;
-            --bg-color: #1a1a1a;
-        }
-        * { margin:0; padding:0 }
-        body { background-color: var(--bg-color); color: var(--text-color); }
-        #markmap { display:block; width:100vw; height:100vh }
-        .markmap-foreign code {
-            color: var(--mindmap-code-color) !important;
-            background-color: var(--mindmap-code-bg) !important;
-            border-radius: var(--code-border-radius);
-            padding: var(--code-padding);
-            font-size: var(--code-font-size);
-        }
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>${title}</title>
+	<style>
+		:root {
+			--mindmap-code-bg: #f5f5f5;
+			--mindmap-code-color: #333;
+			--mindmap-blockquote-border: #aaa;
+			--mindmap-hide-bg: rgba(200, 200, 200, 0.85);
+			--text-color: #494949;
+			--bg-color: #fcfcf9;
+			--code-padding: 0.25em;
+			--code-font-size: calc(1em - 2px);
+			--code-border-radius: 2px;
+		}
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--mindmap-code-bg: #2d2d2d;
+				--mindmap-code-color: #e0e0e0;
+				--mindmap-blockquote-border: #555;
+				--mindmap-hide-bg: rgba(80, 80, 80, 0.85);
+				--text-color: #e7e7e7;
+				--bg-color: #1a1a1a;
+			}
+		}
+		[data-theme="dark"] {
+			--mindmap-code-bg: #2d2d2d;
+			--mindmap-code-color: #e0e0e0;
+			--mindmap-blockquote-border: #555;
+			--mindmap-hide-bg: rgba(80, 80, 80, 0.85);
+			--text-color: #e7e7e7;
+			--bg-color: #1a1a1a;
+		}
+		* { margin:0; padding:0 }
+		body { background-color: var(--bg-color); color: var(--text-color); }
+		#markmap { display:block; width:100vw; height:100vh }
+		.markmap-foreign code {
+			color: var(--mindmap-code-color) !important;
+			background-color: var(--mindmap-code-bg) !important;
+			border-radius: var(--code-border-radius);
+			padding: var(--code-padding);
+			font-size: var(--code-font-size);
+		}
+	</style>
 </head>
 <body>
-    <svg id="markmap">
-        <use xlink:href=""><title>${title}</title></use>
-        <desc>${escapedDesc}</desc>
-    </svg>
-    <script src="https://cdn.jsdelivr.net/npm/d3"><\/script>
-    <script src="https://cdn.jsdelivr.net/npm/markmap-view"><\/script>
-    <script>
-        const root=${root};
-        const{Markmap, loadCSS, loadJS}=window.markmap;
-        const maxWidth=${maxWidth};
-        const styles=\`
-            div{padding-bottom:0.12em!important}
-            a {text-decoration:none}
-            foreignObject {overflow:visible}
-            strong{color:var(--text-color); font-size:0.95em!important; font-weight:600!important;}
-            .hide, .hide *{color:var(--text-color)!important; opacity:0.2;}
-            .hide {background-color:var(--mindmap-hide-bg); border-radius:1px; transition:opacity 0.2s ease;}
-            .hide:hover {opacity:0.8;}
-            .hide img {opacity:0}
-            img[alt=h-25]{height:25px}
-            img[alt=h-50]{height:50px}
-            img[alt=h-75]{height:75px}
-            img[alt=h-100]{height:100px}
-            img[alt=h-125]{height:125px}
-            img[alt=h-150]{height:150px}
-            img[alt=h-175]{height:175px}
-            img[alt=h-200]{height:200px}
-            blockquote {
-                width:${widthBlockquote}px!important;
-                white-space:normal;
-                text-align:justify;
-                font-size:0.8em;
-                line-height:1em;
-                border:1px solid var(--mindmap-blockquote-border);
-                padding:10px;
-                border-radius:4px;
-                ${marginLeftBlockquote}
-            }
-            aside{font-size:0.8em; display:inline-block!important; font-weight:normal; vertical-align:top}
-            cite {font-style:inherit; font-family:serif; font-size:0.97em}
-            code {
-                color:var(--mindmap-code-color);
-                background-color:var(--mindmap-code-bg);
-                border-radius:var(--code-border-radius);
-                padding:var(--code-padding);
-                font-size:var(--code-font-size);
-            }
-            ${style.replaceAll('"','\\"')}
-        \`;
-        const options={
-            duration:0,
-            style:id=>styles,
-            maxWidth:maxWidth,
-            spacingVertical:8,
-            paddingX:15,
-            autoFit:true
-        };
-        Markmap.create("#markmap", options, root);
-    <\/script>
+	<svg id="markmap">
+		<use xlink:href=""><title>${title}</title></use>
+		<desc>${escapedDesc}</desc>
+	</svg>
+	<script src="https://cdn.jsdelivr.net/npm/d3"><\/script>
+	<script src="https://cdn.jsdelivr.net/npm/markmap-view"><\/script>
+	<script>
+		const root=${root};
+		const{Markmap, loadCSS, loadJS}=window.markmap;
+		const maxWidth=${maxWidth};
+		const styles=\`
+			div{padding-bottom:0.12em!important}
+			a {text-decoration:none}
+			foreignObject {overflow:visible}
+			strong{color:var(--text-color); font-size:0.95em!important; font-weight:600!important;}
+			.hide, .hide *{color:var(--text-color)!important; opacity:0.2;}
+			.hide {background-color:var(--mindmap-hide-bg); border-radius:1px; transition:opacity 0.2s ease;}
+			.hide:hover {opacity:0.8;}
+			.hide img {opacity:0}
+			img[alt=h-25]{height:25px}
+			img[alt=h-50]{height:50px}
+			img[alt=h-75]{height:75px}
+			img[alt=h-100]{height:100px}
+			img[alt=h-125]{height:125px}
+			img[alt=h-150]{height:150px}
+			img[alt=h-175]{height:175px}
+			img[alt=h-200]{height:200px}
+			blockquote {
+				width:${widthBlockquote}px!important;
+				white-space:normal;
+				text-align:justify;
+				font-size:0.8em;
+				line-height:1em;
+				border:1px solid var(--mindmap-blockquote-border);
+				padding:10px;
+				border-radius:4px;
+				${marginLeftBlockquote}
+			}
+			aside{font-size:0.8em; display:inline-block!important; font-weight:normal; vertical-align:top}
+			cite {font-style:inherit; font-family:serif; font-size:0.97em}
+			code {
+				color:var(--mindmap-code-color);
+				background-color:var(--mindmap-code-bg);
+				border-radius:var(--code-border-radius);
+				padding:var(--code-padding);
+				font-size:var(--code-font-size);
+			}
+			${style.replaceAll('"','\\"')}
+		\`;
+		const options={
+			duration:0,
+			style:id=>styles,
+			maxWidth:maxWidth,
+			spacingVertical:8,
+			paddingX:15,
+			autoFit:true
+		};
+		Markmap.create("#markmap", options, root);
+	<\/script>
 </body>
 </html>`;
 		const file = new File([templateHtml], "mindmap.html", {
@@ -439,11 +470,13 @@
 
 	function handleKeydown(event) {
 		if (!$show && event.key === 'r') {
-			automaticResize = automaticResize ? false : true;
-			if(automaticResize) {
-				setTimeout(() => mm.fit(), 50);
-			}
+			toggleAutomaticResize();
 		}
+	}
+
+	// Add touch event listeners for mobile devices
+	function handleTouchStart(event) {
+		// Just using the click handler as it already handles double-tap detection
 	}
 
 </script>
@@ -453,7 +486,7 @@
 <div bind:clientWidth={w} bind:clientHeight={h} style="width:100vw; height:100vh">
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<svg id="markmap" bind:this={mindmap} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-		style="width:100%; height:100%; overflow: visible;" on:click={handleHide}>
+		style="width:100%; height:100%; overflow: visible;" on:click={handleHide} on:touchstart={handleTouchStart}>
 	</svg>
 </div>
 <style>
