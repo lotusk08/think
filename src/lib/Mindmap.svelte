@@ -124,7 +124,7 @@
 			initialExpandLevel: initialExpandLevel,
 		}
 		const optionsJSON = deriveOptions({
-			color: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#8c564b", "#e377c2", "#17becf", "#bcbd22"],
+			color: getComputedStyle(document.documentElement).getPropertyValue('--mindmap-branch-colors').split(',').map(c => c.trim()),
 			colorFreezeLevel: colorFreezeLevel,
 		})
 		const optionsFull = colorFreezeLevel > 0 ? {...options, ...optionsJSON} : options
@@ -133,7 +133,69 @@
 		nodeTitle = document.createElement("title")
 		nodeTitle.innerHTML=title;
 		mindmap.appendChild(nodeTitle);
-		const styleCSS = 'svg div{margin-top:-4px;} svg a {text-decoration:none} svg foreignObject {overflow:visible;} svg strong{color:var(--text-color); font-size:0.95em!important; font-weight:600!important;} svg .hide, svg .hide *{color:transparent!important} svg .hide {background-color:#bdbbbbbc;border-radius:1px;} svg .hide img {opacity:0} svg img[alt=h-25]{height:25px} svg img[alt=h-50]{height:50px} svg img[alt=h-75]{height:75px} svg img[alt=h-100]{height:100px} svg img[alt=h-125]{height:125px} svg img[alt=h-150]{height:150px} svg img[alt=h-175]{height:175px} svg img[alt=h-200]{height:200px} svg blockquote {width:'+widthBlockquote+'px!important; white-space: normal; text-align:justify; font-size:0.8em; line-height:1em; border:1px solid #aaa; padding:10px; border-radius:4px;'+marginLeftBlockquote+'} svg aside{font-size: 0.8em; display: inline-block!important; font-weight:normal;vertical-align: top} svg cite {font-style:inherit; font-family:serif; font-size:0.97em} svg code {color: #555; background-color: #f0f0f0; border-radius: 2px;} [data-theme="dark"] svg code {background-color: #2a2a2a; color: #e0e0e0;}' + style;
+		const styleCSS = `
+			svg div{margin-top:-4px;} 
+			svg a {text-decoration:none} 
+			svg foreignObject {overflow:visible;} 
+			svg strong{
+				font-size:0.95em; 
+				font-weight:600;
+			} 
+			svg .hide, svg .hide *{
+				color:var(--text-color)!important;
+				opacity: 0.2;
+			} 
+			svg .hide {
+				background-color:var(--mindmap-hide-bg);
+				border-radius:1px;
+				transition: opacity 0.2s ease;
+			} 
+			svg .hide:hover {
+				opacity: 0.8;
+			}
+			svg .hide img {opacity:0} 
+			svg img[alt=h-25]{height:25px} 
+			svg img[alt=h-50]{height:50px} 
+			svg img[alt=h-75]{height:75px} 
+			svg img[alt=h-100]{height:100px} 
+			svg img[alt=h-125]{height:125px} 
+			svg img[alt=h-150]{height:150px} 
+			svg img[alt=h-175]{height:175px} 
+			svg img[alt=h-200]{height:200px} 
+			svg blockquote {
+				width:${widthBlockquote}px!important; 
+				white-space: normal; 
+				text-align:justify; 
+				font-size:0.8em; 
+				line-height:1em; 
+				border:1px solid var(--mindmap-blockquote-border); 
+				padding:10px; 
+				border-radius:4px;
+				${marginLeftBlockquote}
+			} 
+			svg aside{
+				font-size: 0.8em; 
+				display: inline-block!important; 
+				font-weight:normal;
+				vertical-align: top
+			} 
+			svg cite {
+				font-style:inherit; 
+				font-family:serif; 
+				font-size:0.97em
+			} 
+			svg code, .markmap-foreign code {
+				color: var(--mindmap-code-color); 
+				background-color: var(--mindmap-code-bg); 
+				border-radius: var(--code-border-radius);
+				padding: var(--code-padding);
+				font-size: var(--code-font-size);
+			}
+			.markmap-foreign code {
+				color: var(--mindmap-code-color) !important;
+				background-color: var(--mindmap-code-bg) !important;
+			}
+		` + style;
 		const styleElement = document.createElement("style")
 		styleElement.innerHTML=styleCSS;
 		mindmap.appendChild(styleElement);
@@ -238,7 +300,118 @@
 
 	function mindMapSaveAsHtmlCreateFile() {
 		const root = JSON.stringify(mindmapRoot);
-		let templateHtml ='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="ie=edge"><title>'+title+'</title><style>*{margin:0; padding:0}#markmap{display:block; width:100vw; height:100vh}</style></head><body><svg id="markmap"><use xlink:href=""><title>'+title+'</title></use><desc>'+description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&lt;')+'</desc></svg><script src="https://cdn.jsdelivr.net/npm/d3"><\/script><script src="https://cdn.jsdelivr.net/npm/markmap-view"><\/script><script>const root='+root+'; const{Markmap, loadCSS, loadJS}=window.markmap; const maxWidth='+maxWidth+'; const styles="div{padding-bottom:0.12em!important} a {text-decoration:none} foreignObject {overflow:visible} strong{color:var(--text-color); font-size:0.95em!important; font-weight:600!important;} .hide, .hide *{color:transparent!important} .hide {background-color:#bdbbbbbc;border-radius:1px;} .hide img {opacity:0} img[alt=h-25]{height:25px} img[alt=h-50]{height:50px} img[alt=h-75]{height:75px} img[alt=h-100]{height:100px} img[alt=h-125]{height:125px} img[alt=h-150]{height:150px} img[alt=h-175]{height:175px} img[alt=h-200]{height:200px} blockquote {width:'+widthBlockquote+'px!important;  white-space: normal;  text-align:justify;  font-size:0.8em;  line-height:1em;  border:1px solid #aaa;  padding:10px;  border-radius:4px; '+marginLeftBlockquote+'} aside{font-size: 0.8em;  display: inline-block!important;  font-weight:normal; vertical-align: top} cite {font-style:inherit;  font-family:serif;  font-size:0.97em} code {color: #555; background-color: #f0f0f0; border-radius: 2px;} [data-theme=\\"dark\\"] code {background-color: #2a2a2a; color: #e0e0e0;}'+style.replaceAll('"','\\"')+'"; const options={duration:0, style:id=>styles, maxWidth:maxWidth, spacingVertical:8, paddingX:15, autoFit:true}; Markmap.create("#markmap", options, root); <\/script></body></html>';
+		const escapedDesc = description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&lt;');
+		let templateHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>${title}</title>
+    <style>
+        :root {
+            --mindmap-code-bg: #f5f5f5;
+            --mindmap-code-color: #333;
+            --mindmap-blockquote-border: #aaa;
+            --mindmap-hide-bg: rgba(200, 200, 200, 0.85);
+            --text-color: #494949;
+            --bg-color: #fcfcf9;
+            --code-padding: 0.25em;
+            --code-font-size: calc(1em - 2px);
+            --code-border-radius: 2px;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --mindmap-code-bg: #2d2d2d;
+                --mindmap-code-color: #e0e0e0;
+                --mindmap-blockquote-border: #555;
+                --mindmap-hide-bg: rgba(80, 80, 80, 0.85);
+                --text-color: #e7e7e7;
+                --bg-color: #1a1a1a;
+            }
+        }
+        [data-theme="dark"] {
+            --mindmap-code-bg: #2d2d2d;
+            --mindmap-code-color: #e0e0e0;
+            --mindmap-blockquote-border: #555;
+            --mindmap-hide-bg: rgba(80, 80, 80, 0.85);
+            --text-color: #e7e7e7;
+            --bg-color: #1a1a1a;
+        }
+        * { margin:0; padding:0 }
+        body { background-color: var(--bg-color); color: var(--text-color); }
+        #markmap { display:block; width:100vw; height:100vh }
+        .markmap-foreign code {
+            color: var(--mindmap-code-color) !important;
+            background-color: var(--mindmap-code-bg) !important;
+            border-radius: var(--code-border-radius);
+            padding: var(--code-padding);
+            font-size: var(--code-font-size);
+        }
+    </style>
+</head>
+<body>
+    <svg id="markmap">
+        <use xlink:href=""><title>${title}</title></use>
+        <desc>${escapedDesc}</desc>
+    </svg>
+    <script src="https://cdn.jsdelivr.net/npm/d3"><\/script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view"><\/script>
+    <script>
+        const root=${root};
+        const{Markmap, loadCSS, loadJS}=window.markmap;
+        const maxWidth=${maxWidth};
+        const styles=\`
+            div{padding-bottom:0.12em!important}
+            a {text-decoration:none}
+            foreignObject {overflow:visible}
+            strong{color:var(--text-color); font-size:0.95em!important; font-weight:600!important;}
+            .hide, .hide *{color:var(--text-color)!important; opacity:0.2;}
+            .hide {background-color:var(--mindmap-hide-bg); border-radius:1px; transition:opacity 0.2s ease;}
+            .hide:hover {opacity:0.8;}
+            .hide img {opacity:0}
+            img[alt=h-25]{height:25px}
+            img[alt=h-50]{height:50px}
+            img[alt=h-75]{height:75px}
+            img[alt=h-100]{height:100px}
+            img[alt=h-125]{height:125px}
+            img[alt=h-150]{height:150px}
+            img[alt=h-175]{height:175px}
+            img[alt=h-200]{height:200px}
+            blockquote {
+                width:${widthBlockquote}px!important;
+                white-space:normal;
+                text-align:justify;
+                font-size:0.8em;
+                line-height:1em;
+                border:1px solid var(--mindmap-blockquote-border);
+                padding:10px;
+                border-radius:4px;
+                ${marginLeftBlockquote}
+            }
+            aside{font-size:0.8em; display:inline-block!important; font-weight:normal; vertical-align:top}
+            cite {font-style:inherit; font-family:serif; font-size:0.97em}
+            code {
+                color:var(--mindmap-code-color);
+                background-color:var(--mindmap-code-bg);
+                border-radius:var(--code-border-radius);
+                padding:var(--code-padding);
+                font-size:var(--code-font-size);
+            }
+            ${style.replaceAll('"','\\"')}
+        \`;
+        const options={
+            duration:0,
+            style:id=>styles,
+            maxWidth:maxWidth,
+            spacingVertical:8,
+            paddingX:15,
+            autoFit:true
+        };
+        Markmap.create("#markmap", options, root);
+    <\/script>
+</body>
+</html>`;
 		const file = new File([templateHtml], "mindmap.html", {
 			type: "text/plain;charset=utf-8"
 		});
