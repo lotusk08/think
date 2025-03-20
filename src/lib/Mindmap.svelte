@@ -44,6 +44,7 @@
 		automaticResize = isMobile ? false : true;
 	})
 	let mm;
+	let initialFitDone = false;
 
 	$: if (maxWidth<250) {
 		widthBlockquote = maxWidth;
@@ -202,6 +203,13 @@
 
 		mm=Markmap.create('#markmap', optionsFull, root);
 
+		// Initial fit with a slight delay to ensure proper rendering
+		if (automaticResize && !initialFitDone) {
+			setTimeout(() => {
+				mm.fit();
+				initialFitDone = true;
+			}, 100);
+		}
 
 		if (curves === false) {
 			debouncedCurvesToLines();
@@ -256,7 +264,7 @@
 						}
 					}
 					if(automaticResize) {
-						mm.fit();
+						setTimeout(() => mm.fit(), 50);
 					}
 					return
 				}
@@ -273,7 +281,7 @@
 				}
 			}
 			if(automaticResize) {
-				mm.fit();
+				setTimeout(() => mm.fit(), 50);
 			}
 	}
 
@@ -432,7 +440,7 @@
 		if (!$show && event.key === 'r') {
 			automaticResize = automaticResize ? false : true;
 			if(automaticResize) {
-				mm.fit();
+				setTimeout(() => mm.fit(), 50);
 			}
 		}
 	}
@@ -467,7 +475,8 @@
 
 		:global(main svg) {
 			overflow: visible;
-			zoom: 55% !important;
+			/* Allow scaling to be controlled by the fit function instead */
+			zoom: 100% !important;
 		}
 
 	}
