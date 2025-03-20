@@ -438,8 +438,8 @@
 	}
 
 	function handleKeydown(event) {
-		if (!$show && event.key === 'r' && event.target.tagName === 'BODY') {
-			automaticResize = !automaticResize;
+		if (!$show && event.key === 'r') {
+			automaticResize = automaticResize ? false : true;
 			if(automaticResize) {
 				setTimeout(() => mm.fit(), 50);
 			}
@@ -450,7 +450,7 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div bind:clientWidth={w} bind:clientHeight={h} style="width:100vw; height:100vh" on:click={() => { if (automaticResize) setTimeout(() => mm.fit(), 50); }}>
+<div bind:clientWidth={w} bind:clientHeight={h} style="width:100vw; height:100vh">
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<svg id="markmap" bind:this={mindmap} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
 		style="width:100%; height:100%; overflow: visible;" on:click={handleHide}>

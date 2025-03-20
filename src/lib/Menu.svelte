@@ -189,9 +189,9 @@
         position: absolute;
         bottom: 1.5em;
         left: 1.5em;
-        background-color: var(--menu-bg);
-        backdrop-filter: blur(5px);
         border-radius: 8px;
+        backdrop-filter: blur(5px);
+        background-color: var(--menu-bg);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -259,7 +259,7 @@
         color: var(--icon-hover);
     }
 
-    .theme-toggle, .theme-reset {
+    .theme-toggle {
         background: transparent;
         border: none;
         cursor: pointer;
@@ -268,12 +268,12 @@
         outline: none;
     }
 
-    .theme-toggle:focus-visible, .theme-reset:focus-visible {
+    .theme-toggle:focus-visible {
         outline: 2px solid var(--icon-hover);
         border-radius: 5px;
     }
 
-    #shareNotification, #themeNotification {
+    #shareNotification {
         position: absolute;
         bottom: 3.5em;
         padding: 0.75em 1.25em;
@@ -289,14 +289,14 @@
     }
 
     @media screen and (max-width: 768px) {
-        #menu {
+        #menu, .menu-container {
             position: fixed;
             bottom: 1em;
             left: 50%;
             transform: translateX(-50%);
         }
         
-        #shareNotification, #themeNotification {
+        #shareNotification {
             position: fixed;
             bottom: 5em;
             left: 50%;
