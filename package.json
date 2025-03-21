@@ -24,6 +24,7 @@
     "markmap-common": "^0.15.6",
     "markmap-lib": "^0.15.8",
     "markmap-view": "^0.15.8",
-    "node-emoji": "^1.11.0"
+    "node-emoji": "^1.11.0",
+    "turndown": "^7.2.0"
   }
 }
