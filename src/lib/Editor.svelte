@@ -9,61 +9,84 @@
 </script>
 
 <script>
-    import {
-        onMount,
-    } from 'svelte';
-
-    import {
-        show,
-        markdownSource
-    } from './stores.js'
+    import { onMount } from 'svelte';
+    import { show, markdownSource } from './stores.js';
     import url from './url.js';
+    import Turndown from 'turndown';
 
     let textArea;
     let editor;
 
     const my = editor => {
         let code = editor.textContent;
-        // code = code.replace(/\n##\s/g,'\n@hash@hash ')
-        code = code.replace(/:(.*)_(.*?):/g,':$1@underscore$2:')
-        code = code.replace(/:(.*)_(.*?):/g,':$1@underscore$2:')
-        code = code.replace(/:(.*)_(.*?):/g,':$1@underscore$2:')
+        code = code.replace(/:(.*)_(.*?):/g, ':$1@underscore$2:');
+        code = code.replace(/:(.*)_(.*?):/g, ':$1@underscore$2:');
+        code = code.replace(/:(.*)_(.*?):/g, ':$1@underscore$2:');
         code = hljs.highlight(code, {
             language: 'markdown',
             ignoreUnescapedHTML: false
         }).value;
-        code = code.replace(/\\\\/g, '<span class="language-xml"><span class="hljs-tag">\\\\</span></span>').replace(/&lt;!--(.*?)--&gt;/g,'<span class="hljs-comment">&lt;!--$1--&gt;</span>').replace(/&lt;!--(\s*?)fold(\s*?)--&gt;/g, '<span class="language-xml"><span class="hljs-special-tag">&lt;!--$1fold$2--&gt;</span></span>');
-        // .replace(/@hash@hash\s(.*?)\n/g,'<span class="hljs-section hljs-header-2">## $1</span>\n')
-        code = code.replace(/@underscore/g,'_')
+        code = code.replace(/\\\\/g, '<span class="language-xml"><span class="hljs-tag">\\\\</span></span>')
+            .replace(/<!--(.*?)-->/g, '<span class="hljs-comment"><!--$1--></span>')
+            .replace(/<!--(\s*?)fold(\s*?)-->/g, '<span class="language-xml"><span class="hljs-special-tag"><!--$1fold$2--></span></span>');
+        code = code.replace(/@underscore/g, '_');
         editor.innerHTML = code;
     };
 
     let jar;
-
-
-    let hidden
+    let hidden;
     $: $show ? hidden = "" : hidden = "hidden";
-
 
     let CodeJar;
 
     onMount(async () => {
-        ({
-            CodeJar
-        } = await import("codejar"))
-        jar = await CodeJar(editor, my, {history:true});
-    })
+        const codeJarModule = await import("codejar");
+        CodeJar = codeJarModule.CodeJar;
 
-    $: if ($show == true) {		
+        jar = await CodeJar(editor, my, { history: true });
+        editor.addEventListener('paste', handlePaste);
+    });
+
+    $: if ($show == true) {
         setTimeout(function () {
             textArea.firstChild.focus();
         }, 0);
     }
- 
-    $: if(jar) {jar.onUpdate(code=>
-        {if (jar.toString() != $markdownSource) {markdownSource.update(n=>code)}}
-    )}
 
+    $: if (jar) {
+        jar.onUpdate(code => {
+            if (jar.toString() != $markdownSource) {
+                markdownSource.update(n => code);
+            }
+        });
+    }
+
+    function handlePaste(event) {
+        event.preventDefault();
+        const clipboardData = event.clipboardData || window.clipboardData;
+        let pastedText = '';
+
+        if (clipboardData.types.includes('text/plain')) {
+            pastedText = clipboardData.getData('text/plain');
+        } else if (clipboardData.types.includes('text/html')) {
+            const htmlContent = clipboardData.getData('text/html');
+            const turndownService = new Turndown({
+                headingStyle: 'atx',
+                hr: '---',
+                bulletListMarker: '-',
+                codeBlockStyle: 'fenced',
+                emDelimiter: '*'
+            });
+            pastedText = turndownService.turndown(htmlContent);
+        }
+
+        if (pastedText) {
+            markdownSource.update(() => pastedText);
+            if (jar) {
+                jar.updateCode(pastedText);
+            }
+        }
+    }
 </script>
 
 <div bind:this={textArea}>
@@ -90,8 +113,8 @@
         background-color: var(--editor-bg);
     }
     @media screen and (max-width:768px) {
-        textarea,:global(.editor) {
-            width:85%;
+        textarea, :global(.editor) {
+            width: 85%;
             height: 35vh;
             bottom: 3em;
         }
@@ -112,14 +135,14 @@
         line-height: 20px;
         padding: 10px;
         tab-size: 2;
-        resize: horizontal!important;
+        resize: horizontal !important;
     }
 
     :global(.language-xml *) {
         color: green !important;
         font-weight: 300 !important;
     }
-    
+
     :global(.hljs-section) {
         color: var(--text-color);
         font-weight: inherit;
@@ -159,22 +182,8 @@
     }
 
     :global(.hljs-comment) {
-        color: #777!important;
-        font-weight:100;
-        font-size:0.96em;
-        
+        color: #777 !important;
+        font-weight: 100;
+        font-size: 0.96em;
     }
-
-    /* :global(.hljs-header-2) {
-        display:inline-block;
-        width:100%;
-        background-color:#F8F8FF;
-    }
-
-    :global(.hljs-header-3) {
-        display:inline-block;
-        width:100%;
-        background-color:#F8F8FF;
-    } */
-
 </style>
