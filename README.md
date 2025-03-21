@@ -6,7 +6,7 @@
   </ul>
 </div>
 
-[![Think](think.webp)](https://think.stevehoang.com)
+[![Think tree](think-tree-v1.0.0.webp)](https://think.stevehoang.com)
 
 ## Developing
 
