@@ -100,23 +100,16 @@ mw: 600
   - \`\`\`showMenu: false\`\`\` \\ to hide the menu
 `);
 
-// Theme store implementation (unchanged)
 function createThemeStore() {
   const { subscribe, set, update } = writable("light");
 
   function updateBrowserTheme(theme) {
     if (typeof window === "undefined") return;
     const themeColor = theme === "dark" ? "#1a1a1a" : "#FCFCF9";
-    const metaTags = document.querySelectorAll('meta[name="theme-color"]');
-    metaTags.forEach((tag) => {
-      if (
-        (theme === "light" && tag.media === "(prefers-color-scheme: light)") ||
-        (theme === "dark" && tag.media === "(prefers-color-scheme: dark)") ||
-        !tag.media
-      ) {
-        tag.setAttribute("content", themeColor);
-      }
-    });
+    const metaTag = document.querySelector('meta[name="theme-color"]');
+    if (metaTag) {
+      metaTag.setAttribute("content", themeColor);
+    }
   }
 
   if (typeof window !== "undefined") {
