@@ -7,6 +7,7 @@
         markdownSource,
         defaultTemplate,
         theme,
+        initialDemoContent // Import the shared initial content
     } from "./stores.js";
     export let source;
     export let disableWarningMessage;
@@ -22,6 +23,7 @@
     let encodageHash;
     let menu;
     let currentTheme;
+    let hasConfirmedReset = false;
 
     // Subscribe to theme changes
     theme.subscribe(value => {
@@ -64,7 +66,28 @@
     }
 
     function menuReset() {
-        markdownSource.update((content) => defaultTemplate);
+        const isInitialContent = $markdownSource === initialDemoContent;
+        const isDefaultTemplate = $markdownSource === defaultTemplate;
+
+        if (isInitialContent || isDefaultTemplate || (hasConfirmedReset && confirm("This will clear your current data. Sure?"))) {
+            localStorage.clear();
+            
+            sessionStorage.clear();
+            
+            if (window.caches) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+            
+            markdownSource.update((content) => defaultTemplate);
+            
+            hasConfirmedReset = true;
+            
+            toastNotification("Data cleared!");
+        }
     }
 
     function handleKeydown(event) {
@@ -108,12 +131,14 @@
     }
 
     let showNotification = false;
+    let notificationMessage = "Link copied!";
 
-    function toastNotification() {
+    function toastNotification(message = "Link copied!") {
+        notificationMessage = message;
         showNotification = true;
         setTimeout(function () {
             showNotification = false;
-        }, 1500);
+        }, 2000);
     }
 </script>
 
@@ -165,8 +190,9 @@
                         on:click|preventDefault={menuReset}
                         transition:fade={{ duration: 200 }}
                         class="menu-btn"
+                        title="Clear mindmap and browser cache"
                     >
-                        <i class="fas fa-eraser"></i>
+                        <i class="fas fa-eraser" style="color: #e46b00e6;"></i>
                     </button>
                 {/if}
             </div>
@@ -178,7 +204,7 @@
                 in:fly={{ y: 5, duration: 1000}}
                 out:fade
             >
-                Link copied!
+                {notificationMessage}
             </div>
         {/if}
     </div>
@@ -216,13 +242,18 @@
         display: flex;
         justify-content: center;
     }
+    
+    .eraser-container i {
+        display: flex;
+        justify-content: center;
+    }
 
     .edit-mode {
         transition: width 0.2s ease-in-out;
     }
 
     #menu:hover {
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
     }
 
     #menu button {
@@ -254,7 +285,7 @@
     }
 
     .menu-btn:hover i {
-        color: var(--icon-hover);
+        color: var(--icon-hover) !important;
     }
 
     .theme-toggle {

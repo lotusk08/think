@@ -36,6 +36,7 @@
 	let description;
 	let isMobile = false;
 	let lastTapTime = 0;
+	let isMac = false;
 	$: description = $markdownSource;
 
 	onMount(() => {
@@ -44,6 +45,9 @@
 			navigator.userAgent
 		);
 		automaticResize = isMobile ? false : true;
+		
+		// Detect Mac OS
+		isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 	})
 	let mm;
 	let initialFitDone = false;
@@ -60,9 +64,9 @@
 	$: wValue.update(n => w)
 	$: hValue.update(n => h)
 
-	// Fonction debounce pour gérer l'update de la carte avec un délai
-	// fonction utilisée pour changer les lignes en courbe après affichage
-	// et afin d'éviter un clignotement à chaque touche appuyée
+	// Debounce function to handle map updates with a delay
+	// Function used to change lines to curves after display
+	// and to avoid flickering with each keypress
 	function debounce(func, wait) {
 		let timeout;
 		return function(...args) {
@@ -265,20 +269,24 @@
 		let targetElement = event.target
 		const elementType = targetElement.tagName
 		let searchDivCount = 0;
+		
+		// Check if Command key (Mac) or Alt key (Windows/Linux) is pressed
+		const modifierKeyPressed = isMac ? event.metaKey : event.altKey;
+		
 		if (elementType == 'SVG') {
 			return
 		} else {
 			if(elementType =='circle') {
-				// On gère à nouveau l'ouverture des liens dans un autre onglet si on utilise cette option dans le yaml
+				// Handle opening links in a new tab again if we're using this option in the yaml
 				if(openLinksInNewTab) {
 					setLinksToOpenInNewTab()
 				}
-				// On gère à nouveau la conversion en lignes droites si besoin
+				// Handle conversion to straight lines if needed
 				if (curves === false) {
 					debouncedCurvesToLines();
 				}
 			}
-			if (elementType =='circle' && (event.altKey || focusOnBranch)) {
+			if (elementType =='circle' && (modifierKeyPressed || focusOnBranch)) {
 				const parentElement = targetElement.parentElement;
 				const dataPathParentElement = parentElement.getAttribute('data-path');
 				const sameLevelBranches = trimFromLastDot(dataPathParentElement)
@@ -306,8 +314,10 @@
 			}
 		}
 		if (targetElement.tagName == 'DIV') {
-			if (event.altKey) {
-				targetElement.classList.toggle('hide'); }
+			if (modifierKeyPressed) {
+				// Modified behavior: Toggle the hide class to show/hide the branch text
+				targetElement.classList.toggle('hide'); 
+			}
 			else {
 				targetElement.classList.remove('hide');
 			}

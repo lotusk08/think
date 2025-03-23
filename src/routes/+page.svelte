@@ -19,7 +19,7 @@
 	let mindmapData;
 	let maxWidthFromYAML = 500;
 	let style = '';
-	let title = 'Mindmap'
+	let title = 'Mindmap';
 	let mindmapFromURL = false;
 	let colorFreezeLevel = 0;
 	let initialExpandLevel = -1;
@@ -136,7 +136,7 @@
 			if (encodageHash != '') {
 				mindmapData = decodeURI(encodageHash);
 				markdownSource.update(n => mindmapData);
-				history.pushState(null, null, $baseURL);	
+				history.pushState(null, null, $baseURL);    
 				mindmapFromURL=true;
 			}
 		}
@@ -191,38 +191,42 @@
 	$: if ($markdownSource.split("---").length > 2) {
 		try {
 			yamlData = yaml.load($markdownSource.split("---")[1]);
+			title = yamlData.hasOwnProperty('title') ? yamlData.title : 'Mindmap';
 			style = yamlData.hasOwnProperty('style') ? yamlData.style : '';
 			openLinksInNewTab = yamlData.hasOwnProperty('openLinksInNewTab') ? yamlData.openLinksInNewTab : false;
 			focusOnBranch = yamlData.hasOwnProperty('focusOnBranch') ? yamlData.focusOnBranch : false;
 			automaticResize = yamlData.hasOwnProperty('automaticResize') ? yamlData.automaticResize : true;
-			showMenu = yamlData.hasOwnProperty('showMenu')? yamlData.showMenu : true;
+			showMenu = yamlData.hasOwnProperty('showMenu') ? yamlData.showMenu : true;
 			curves = yamlData.hasOwnProperty('curves') ? yamlData.curves : true;
 			theme = yamlData.hasOwnProperty('theme') ? yamlData.theme : '';
 			disableWarningMessage = yamlData.hasOwnProperty('disableWarningMessage') ? yamlData.disableWarningMessage : false;
 			initialExpandLevel = yamlData.hasOwnProperty('initialExpandLevel') ? yamlData.initialExpandLevel : -1;
-			if(theme == 'focus' || theme == 'nolines' || theme == 'black') {
-				if(theme == 'focus' || theme == 'nolines') {
-					maxWidthFromYAML = yamlData.hasOwnProperty('maxWidth') ? yamlData.maxWidth : 250;
+
+			if (theme == 'focus' || theme == 'nolines' || theme == 'black') {
+				if (theme == 'focus' || theme == 'nolines') {
+					// Check for maxWidth or mw, with maxWidth taking precedence
+					maxWidthFromYAML = yamlData.hasOwnProperty('maxWidth') ? yamlData.maxWidth : (yamlData.hasOwnProperty('mw') ? yamlData.mw : 250);
 					colorFreezeLevel = yamlData.hasOwnProperty('colorFreezeLevel') ? yamlData.colorFreezeLevel : 2;
 				}
-				if(theme == 'focus') {
+				if (theme == 'focus') {
 					style = focusStyle + ' ' + style;
 				}
-				if(theme == 'nolines') {
+				if (theme == 'nolines') {
 					style = nolinesStyle + ' ' + style;
 				}
-				if(theme =='black') {
+				if (theme == 'black') {
 					style = blackStyle + ' ' + style;
 					curves = yamlData.hasOwnProperty('curves') ? yamlData.curves : false;
 				}
 			} else {
-				maxWidthFromYAML = yamlData.hasOwnProperty('maxWidth') ? yamlData.maxWidth : 500;
+				// Check for maxWidth or mw, with maxWidth taking precedence
+				maxWidthFromYAML = yamlData.hasOwnProperty('maxWidth') ? yamlData.maxWidth : (yamlData.hasOwnProperty('mw') ? yamlData.mw : 500);
 				colorFreezeLevel = yamlData.hasOwnProperty('colorFreezeLevel') ? yamlData.colorFreezeLevel : 0;
 				curves = yamlData.hasOwnProperty('curves') ? yamlData.curves : true;
 				style = style;
 			}
 		} catch (e) {
-
+			console.error('Error parsing YAML:', e);
 		}
 	}
 
@@ -230,17 +234,13 @@
 
 </script>
 
-
 <Menu source={$markdownSource} {showMenu} {disableWarningMessage}/>
 
 <main>
-
 	<Editor />
-
 	{#if mindmapFromURL}
 		<Mindmap source={mindmapSource} maxWidth={maxWidthFromYAML} style={style} title={title} colorFreezeLevel={colorFreezeLevel} initialExpandLevel={initialExpandLevel} {openLinksInNewTab} {curves} {focusOnBranch} {automaticResize} />
 	{:else}
 		<Mindmap source={mindmapSource} maxWidth={maxWidthFromYAML} style={style} title={title} colorFreezeLevel={colorFreezeLevel} initialExpandLevel={initialExpandLevel} {openLinksInNewTab} {curves} {focusOnBranch} {automaticResize} />
 	{/if}
-
 </main>

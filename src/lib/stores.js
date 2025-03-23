@@ -1,107 +1,8 @@
 import { writable } from "svelte/store";
 
-function createThemeStore() {
-  const { subscribe, set, update } = writable("light");
-
-  // Define updateBrowserTheme in the outer scope so it's accessible to all methods
-  function updateBrowserTheme(theme) {
-    if (typeof window === "undefined") return;
-
-    const themeColor = theme === "dark" ? "#1a1a1a" : "#FCFCF9";
-    const metaTags = document.querySelectorAll('meta[name="theme-color"]');
-    metaTags.forEach((tag) => {
-      if (
-        (theme === "light" && tag.media === "(prefers-color-scheme: light)") ||
-        (theme === "dark" && tag.media === "(prefers-color-scheme: dark)") ||
-        !tag.media
-      ) {
-        tag.setAttribute("content", themeColor);
-      }
-    });
-  }
-
-  if (typeof window !== "undefined") {
-    // Initialize theme
-    const savedTheme = localStorage.getItem("theme");
-    const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)");
-    const initialTheme =
-      savedTheme || (systemDarkMode.matches ? "dark" : "light");
-
-    // Set initial theme
-    set(initialTheme);
-    document.documentElement.setAttribute("data-theme", initialTheme);
-    updateBrowserTheme(initialTheme);
-
-    // Expose theme store to window for system theme sync
-    window.themeStore = { set };
-
-    // Handle system theme changes
-    function handleThemeChange(e) {
-      const newTheme = e.matches ? "dark" : "light";
-      set(newTheme);
-      document.documentElement.setAttribute("data-theme", newTheme);
-      updateBrowserTheme(newTheme);
-    }
-
-    // Clean up any existing event listeners to prevent duplicates
-    try {
-      systemDarkMode.removeEventListener("change", handleThemeChange);
-    } catch (e) {
-      console.warn("Could not remove media query listener");
-    }
-
-    // Try modern event listener first
-    try {
-      systemDarkMode.addEventListener("change", handleThemeChange);
-    } catch (e) {
-      // Fallback for older browsers (especially Safari)
-      try {
-        systemDarkMode.addListener(handleThemeChange);
-      } catch (err) {
-        console.warn("Could not add media query listener:", err);
-      }
-    }
-
-    // Force an initial check
-    handleThemeChange(systemDarkMode);
-  }
-
-  return {
-    subscribe,
-    set: (value) => {
-      set(value);
-      if (typeof window !== "undefined") {
-        if (value) {
-          document.documentElement.setAttribute("data-theme", value);
-          updateBrowserTheme(value);
-        }
-      }
-    },
-    toggle: () => {
-      update((theme) => {
-        const newTheme = theme === "light" ? "dark" : "light";
-        if (typeof window !== "undefined") {
-          document.documentElement.setAttribute("data-theme", newTheme);
-          updateBrowserTheme(newTheme);
-        }
-        return newTheme;
-      });
-    },
-  };
-}
-
-export const theme = createThemeStore();
-export const show = writable(false);
-export const defaultTemplate = `---
-maxWidth: 300
----
-
-# Title
-`;
-
-export const markdownSource = writable(
-  decodeURI(`---
-maxWidth: 600
+// Define the initial demo content as a constant
+export const initialDemoContent = decodeURI(`---
+mw: 600
 ---
 
 # Think tree
@@ -130,6 +31,8 @@ maxWidth: 600
       - \\ \`https://think.stevehoang.com/#URL\`
       - In case of issues: \\ \`https://think.stevehoang.com/#https://corsproxy.io/%3FURL\`
       - On a Gitlab instance, use a \`.gitlab-ci.yml\` file to publish the md file on a public page and use that address as the URL
+- Click on <i class="fas fa-eraser"></i> to **reset** the contents.
+  -  All data from the current season will be **deleted**!
 
 ## How to navigate \\ the map?
 - \\\\ Click on the **circles** at the intersection \\ of branches to show or hide the rest
@@ -172,7 +75,8 @@ maxWidth: 600
 ### A **header** (YAML) \\ for advanced \\ configuration options <!--fold-->
 
 - To specify the maximum \\ width of a branch
-  - \`\`\`maxWidth: 300\`\`\`
+  - \`\`\`maxWidth: 300\`\`\` - precedence
+  - \`\`\`mw: 300\`\`\`
 - To prevent color changes \\ for sub-branches beyond \\ a certain level
   - \`\`\`colorFreezeLevel: 2\`\`\` \\ (so each branch \\ has its own color)
 - To add specific \\ CSS styles
@@ -194,9 +98,93 @@ maxWidth: 600
   - \`\`\`automaticResize: false\`\`\` \\ to disable \\ automatic resizing
   - \`\`\`focusOnBranch: true\`\`\` \\ to focus on the clicked branch \\ and auto-close others
   - \`\`\`showMenu: false\`\`\` \\ to hide the menu
-`)
-);
+`);
 
+// Theme store implementation (unchanged)
+function createThemeStore() {
+  const { subscribe, set, update } = writable("light");
+
+  function updateBrowserTheme(theme) {
+    if (typeof window === "undefined") return;
+    const themeColor = theme === "dark" ? "#1a1a1a" : "#FCFCF9";
+    const metaTags = document.querySelectorAll('meta[name="theme-color"]');
+    metaTags.forEach((tag) => {
+      if (
+        (theme === "light" && tag.media === "(prefers-color-scheme: light)") ||
+        (theme === "dark" && tag.media === "(prefers-color-scheme: dark)") ||
+        !tag.media
+      ) {
+        tag.setAttribute("content", themeColor);
+      }
+    });
+  }
+
+  if (typeof window !== "undefined") {
+    const savedTheme = localStorage.getItem("theme");
+    const systemDarkMode = window.matchMedia("(prefers-color-scheme: dark)");
+    const initialTheme = savedTheme || (systemDarkMode.matches ? "dark" : "light");
+    set(initialTheme);
+    document.documentElement.setAttribute("data-theme", initialTheme);
+    updateBrowserTheme(initialTheme);
+    window.themeStore = { set };
+
+    function handleThemeChange(e) {
+      const newTheme = e.matches ? "dark" : "light";
+      set(newTheme);
+      document.documentElement.setAttribute("data-theme", newTheme);
+      updateBrowserTheme(newTheme);
+    }
+
+    try {
+      systemDarkMode.removeEventListener("change", handleThemeChange);
+    } catch (e) {
+      console.warn("Could not remove media query listener");
+    }
+
+    try {
+      systemDarkMode.addEventListener("change", handleThemeChange);
+    } catch (e) {
+      try {
+        systemDarkMode.addListener(handleThemeChange);
+      } catch (err) {
+        console.warn("Could not add media query listener:", err);
+      }
+    }
+
+    handleThemeChange(systemDarkMode);
+  }
+
+  return {
+    subscribe,
+    set: (value) => {
+      set(value);
+      if (typeof window !== "undefined" && value) {
+        document.documentElement.setAttribute("data-theme", value);
+        updateBrowserTheme(value);
+      }
+    },
+    toggle: () => {
+      update((theme) => {
+        const newTheme = theme === "light" ? "dark" : "light";
+        if (typeof window !== "undefined") {
+          document.documentElement.setAttribute("data-theme", newTheme);
+          updateBrowserTheme(newTheme);
+        }
+        return newTheme;
+      });
+    },
+  };
+}
+
+export const theme = createThemeStore();
+export const show = writable(false);
+export const defaultTemplate = `---
+mw: 300
+---
+
+# Title
+`;
+export const markdownSource = writable(initialDemoContent);
 export const baseURL = writable("");
 export const mindmapSaveAsSvg = writable(false);
 export const mindmapSaveAsHtml = writable(false);
