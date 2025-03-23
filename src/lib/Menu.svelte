@@ -223,8 +223,8 @@
 
     #menu {
         display: flex;
-        padding: 0.35rem 1rem;
-        gap: 0.25rem;
+        padding: 0.4rem 1rem;
+        gap: 0.35rem;
         border-radius: 6px;
         backdrop-filter: blur(5px);
         background-color: var(--menu-bg);
@@ -234,7 +234,7 @@
 
     .menu-items {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.75rem;
         align-items: center;
     }
 
