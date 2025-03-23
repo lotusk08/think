@@ -3,6 +3,7 @@
     import { show, markdownSource } from './stores.js';
     import url from './url.js';
     import Turndown from 'turndown';
+    import hljs from 'highlight.js';
 
     let textArea;
     let editor;
@@ -113,9 +114,9 @@
     }
 
     :global(.editor) {
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border: 0.2px solid var(--border-color);
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
         font-size: 14px;
         letter-spacing: normal;
@@ -154,6 +155,7 @@
 
     :global(.hljs-emphasis) {
         color: inherit;
+        font-size: italic;
     }
 
     :global(.hljs-special-tag) {

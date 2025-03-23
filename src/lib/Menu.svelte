@@ -199,11 +199,11 @@
         display: flex;
         padding: 0.35rem 1rem;
         gap: 0.25rem;
-        border-radius: 8px;
+        border-radius: 6px;
         backdrop-filter: blur(5px);
         background-color: var(--menu-bg);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        border: 1px solid var(--border-color);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        border: none;
     }
 
     .menu-items {
@@ -237,7 +237,7 @@
         height: 2.25em;
         border: none;
         background-color: transparent;
-        border-radius: 6px;
+        border-radius: 4px;
         transition: all 0.2s ease;
         cursor: pointer;
     }
@@ -273,16 +273,16 @@
 
     #shareNotification {
         position: absolute;
-        bottom: 3.5em;
+        bottom: 5em;
         padding: 0.75em 1.25em;
         backdrop-filter: blur(5px);
         background-color: var(--menu-bg);
         color: var(--text-color);
-        border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        border: 1px solid var(--border-color);
-        font-size: 14px;
-        font-weight: 500;
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        border: none;
+        font-size: 10px;
+        font-weight: 400;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
     }
 
@@ -296,7 +296,7 @@
         
         #shareNotification {
             position: fixed;
-            bottom: 5em;
+            bottom: 6.5em;
             left: 50%;
             transform: translateX(-50%);
         }
