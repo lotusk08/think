@@ -1,6 +1,6 @@
 {
-  "name": "think tree",
-  "version": "0.0.1",
+  "name": "Think tree",
+  "version": "1.0.2",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",

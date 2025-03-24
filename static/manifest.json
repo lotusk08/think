@@ -27,11 +27,17 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/favicon.svg",
+      "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     }
   ],
-  "lang": "en"
+  "screenshots": [
+    {
+      "src": "/og-image.jpg",
+      "type": "image/jpg",
+      "sizes": "1200x675"
+    }
+  ]
 }
