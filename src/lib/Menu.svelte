@@ -192,7 +192,7 @@
                         class="menu-btn"
                         title="Clear mindmap and browser cache"
                     >
-                        <i class="fas fa-eraser" style="color: #e46b00e6;"></i>
+                        <i class="fas fa-eraser" style="color: #d360d4;"></i>
                     </button>
                 {/if}
             </div>

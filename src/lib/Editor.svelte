@@ -127,30 +127,31 @@
     }
 
     :global(.language-xml *) {
-        color: green !important;
+        color: #d360d4 !important;
         font-weight: 300 !important;
     }
 
     :global(.hljs-section) {
-        color: var(--text-color);
-        font-weight: inherit;
+        color: var(--text-color) !important;
+        font-weight: 600 !important;
+        /* font-weight: inherit; */
     }
 
     :global(.hljs-strong) {
         font-size: 0.95em;
-        color: var(--text-color);
+        color: inherit !important;
     }
 
     :global(.hljs-link),
     :global(.hljs-string) {
-        color: var(--link-color);
+        color: var(--link-color) !important;
         font-style: italic;
         font-size: 0.98em;
     }
 
     :global(.hljs-bullet) {
-        color: #ff6800;
-        font-weight: 700 !important;
+        color: var(--bullet-color) !important;
+        /*font-weight: 700 !important;*/
     }
 
     :global(.hljs-emphasis) {
