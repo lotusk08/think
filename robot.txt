@@ -1,0 +1,7 @@
+User-agent: *
+Disallow:
+Allow: /
+Sitemap: https://think.stevehoang.com/sitemap.xml
+
+# Author: Steve Hoang
+# Homepage: https://stevehoang.com

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Main app homepage -->
+  <url>
+	<loc>https://think.stevehoang.com/</loc>
+	<lastmod>2025-03-24</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>1.0</priority>
+  </url>
+  <!-- Reference to my main personal page -->
+  <url>
+	<loc>https://stevehoang.com/</loc>
+	<lastmod>2025-03-24</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>0.8</priority>
+  </url>
+  <url>
+	<loc>https://stevehoang.com/writting</loc>
+	<lastmod>2025-03-24</lastmod>
+	<changefreq>monthly</changefreq>
+	<priority>0.7</priority>
+  </url>
+</urlset>

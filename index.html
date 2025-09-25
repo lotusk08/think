@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Think tree</title>
+    <meta charset="utf-8" />
+    <meta
+      name="description"
+      content="Thinking tool to organize ideas, brainstorm, and visualize concepts effortlessly"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="./favicon.ico" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icon-512x512.png" sizes="512x512" type="image/png" />
+    <link rel="apple-touch-icon" href="/icon-180x180.png" />
+    <link rel="apple-touch-icon-precomposed" href="/icon-180x180.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <!-- Prevent flash of incorrect theme -->
+    <script>
+      (function () {
+        try {
+          const savedTheme = localStorage.getItem("theme");
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
+          const theme = savedTheme || systemTheme;
+          document.documentElement.setAttribute("data-theme", theme);
+
+          // Also set up initial listener for system changes if no saved preference
+          const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+          const handleThemeChange = (e) => {
+            if (!localStorage.getItem("theme")) {
+              document.documentElement.setAttribute(
+                "data-theme",
+                e.matches ? "dark" : "light"
+              );
+
+              // Update theme color meta tags
+              const themeColor = e.matches ? "#1a1a1a" : "#FCFCF9";
+              const metaTags = document.querySelectorAll(
+                'meta[name="theme-color"]'
+              );
+              metaTags.forEach((tag) => {
+                if (
+                  (e.matches && tag.media === "(prefers-color-scheme: dark)") ||
+                  (!e.matches &&
+                    tag.media === "(prefers-color-scheme: light)") ||
+                  !tag.media
+                ) {
+                  tag.setAttribute("content", themeColor);
+                }
+              });
+            }
+          };
+
+          // Clean up existing listeners to prevent duplicates
+          try {
+            mediaQuery.removeEventListener("change", handleThemeChange);
+          } catch (e) {
+            console.warn("Could not remove media query listener");
+          }
+
+          // Add event listener with fallback for older browsers
+          try {
+            mediaQuery.addEventListener("change", handleThemeChange);
+          } catch (e) {
+            try {
+              mediaQuery.addListener(handleThemeChange);
+            } catch (err) {
+              console.warn("Could not add media query listener:", err);
+            }
+          }
+        } catch (e) {
+          console.warn("Theme initialization failed:", e);
+        }
+      })();
+    </script>
+    <!-- Theme color for browser UI -->
+    <meta
+      name="theme-color"
+      content="#FCFCF9"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#1a1a1a"
+      media="(prefers-color-scheme: dark)"
+    />
+    <!-- Open Graph for social sharing -->
+    <meta property="og:title" content="Think tree" />
+    <meta
+      property="og:description"
+      content="Thinking tool to organize ideas, brainstorm, and visualize concepts effortlessly"
+    />
+    <meta property="og:image" content="/og-image.jpg" />
+    <meta property="og:url" content="https://think.stevehoang.com" />
+    <meta property="og:type" content="website" />
+    <!-- Preconnect to Font Awesome CDN -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <!-- Font Awesome CDN -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <style>
+      :root {
+        --bullet-color: #026BE6;
+        --bg-color: #fcfcf9;
+        --text-color: #494949;
+        --border-color: #e0e0e0;
+        --menu-bg: rgba(255, 255, 255, 0.1);
+        --editor-bg: rgba(255, 255, 255, 0.02);
+        --icon-color: #757575;
+        --icon-hover: #007bff;
+        --link-color: #0056b2;
+        /* Mindmap specific colors */
+        --mindmap-code-bg: #f5f5f5;
+        --mindmap-code-color: #333;
+        --mindmap-blockquote-border: #aaa;
+        --mindmap-hide-bg: rgba(200, 200, 200, 0.85);
+        --mindmap-branch-colors: #1f77b4, #ff7f0e, #2ca02c, #d62728, #8c564b, #e377c2, #17becf, #bcbd22;
+        /* Theme-specific colors */
+        --mindmap-primary-color: #1f77b4;
+        --mindmap-secondary-bg: #f0f0f0;
+        /* Code block specific */
+        --code-padding: 0.25em;
+        --code-font-size: calc(1em - 2px);
+        --code-border-radius: 2px;
+      }
+
+      [data-theme="dark"] {
+        --bullet-color: #ff6800;
+        --bg-color: #1a1a1a;
+        --text-color: #e8e8e8;
+        --border-color: #404040;
+        --menu-bg: rgba(0, 0, 0, 0.2);
+        --editor-bg: rgba(0, 0, 0, 0.1);
+        --icon-color: #9e9e9e;
+        --icon-hover: #ff7f50;
+        --link-color: #c67839;
+        /* Mindmap specific colors */
+        --mindmap-code-bg: #2d2d2d;
+        --mindmap-code-color: #e0e0e0;
+        --mindmap-blockquote-border: #555;
+        --mindmap-hide-bg: rgba(80, 80, 80, 0.85);
+        --mindmap-branch-colors: #3498db, #e67e22, #2ecc71, #e74c3c, #9b59b6, #e377c2, #17becf, #f1c40f;
+        /* Theme-specific colors */
+        --mindmap-primary-color: #3498db;
+        --mindmap-secondary-bg: #2d2d2d;
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+      }
+    </style>
+    
+		<link href="./_app/immutable/assets/2.5d06f5fd.css" rel="stylesheet">
+		<link rel="modulepreload" href="./_app/immutable/entry/start.c8b59587.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/index.dcabc104.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/singletons.da71906c.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/index.4b07e236.js">
+		<link rel="modulepreload" href="./_app/immutable/entry/app.0802af52.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/preload-helper.a4192956.js">
+		<link rel="modulepreload" href="./_app/immutable/nodes/0.0e536eac.js">
+		<link rel="modulepreload" href="./_app/immutable/nodes/2.49a06ed6.js">
+  </head>
+  <body>
+    <div style="display: contents">
+
+
+
+
+<div class="menu-container svelte-1wkwklk"><nav id="menu" class="svelte-1wkwklk"><div class="menu-items svelte-1wkwklk"><button href="#edit" class="menu-btn svelte-1wkwklk"><i class="fas fa-pen svelte-1wkwklk"></i></button>
+                <button href="#saveHTML" class="menu-btn svelte-1wkwklk"><i class="fas fa-file-code svelte-1wkwklk"></i></button>
+                <button href="#saveSVG" class="menu-btn svelte-1wkwklk"><i class="fas fa-file-arrow-down svelte-1wkwklk"></i></button>
+                <button href="#share" class="menu-btn svelte-1wkwklk"><i class="fas fa-link svelte-1wkwklk"></i></button>
+                <button class="theme-toggle menu-btn svelte-1wkwklk" aria-label="Switch to dark theme" title="Switch to dark theme"><i class="fas fa-moon svelte-1wkwklk"></i></button></div>
+
+            <div class="eraser-container svelte-1wkwklk"></div></nav>
+
+        </div>
+
+<main><div>
+        <pre contenteditable="true" class="editor hidden">---
+mw: 600
+---
+
+# Think tree
+
+## A free and \\ open-source tool
+* [Sources code](https://github.com/lotusk08/think)
+* _Author_: [Steve Hoang](https://stevehoang.com)
+* Built from the \\ [markmap](https://markmap.js.org/) software
+
+## For creating \\ mind maps
+- Click on <i class="fas fa-pen"></i> in the top left to **edit**
+your mind map (_keyboard shortcut: `e`_)
+Markdown is used to create branches
+  - Heading
+    - `# Title` for level 1
+    - `## Subtitle` for level 2
+    - `### Level 3`, `#### Level 4` …
+  - Or use a bulleted list
+    - \\ `- Level 3` \\ 　`  - Level 4` - add 2 spaces before to move to another level \\ `- Level 3`
+- Click on <i class="fas fa-eye"></i> to **hide** the editing window \ and view only the mind map \\ (_keyboard shortcut: `Escape`)
+- **Save** and \\ share your \\ mind map
+  - Click on <i class="fas fa-file-arrow-down"></i> to **save** the map as an _svg_ file \\ [static image] (_keyboard shortcut: `s`)
+  - Click on <i class="fas fa-file-code"></i> to **save** as an HTML file \\ [with interactivity] (_keyboard shortcut: `h`)
+  - Click on <i class="fas fa-link"></i> to copy a **sharing link** \\ for the mind map (_keyboard shortcut: `l`)
+    - Add `?m=0` to the URL to hide the menu
+  - You can store your text \\ on **Obsidian** or on [Stackedit](https://stackedit.io) \\ and display it with Think tree
+    - It's recommended to save the text \\ of your mind map somewhere so \\ you can edit it later <!--fold-->
+      - \\ `https://think.stevehoang.com/#URL`
+      - In case of issues: \\ `https://think.stevehoang.com/#https://corsproxy.io/%3FURL`
+      - On a Gitlab instance, use a `.gitlab-ci.yml` file to publish the md file on a public page and use that address as the URL
+- Click on <i class="fas fa-eraser"></i> to **reset** the contents.
+  -  All data from the current season will be **deleted**!
+
+## How to navigate the map?
+- \\ Click on the **circles** at the intersection \\ of branches to show or hide the rest
+  - \\ **Command+click** on a circle to display \\ only that specific branch
+- **Other shortcuts**
+  - **Command+click** on branch text to hide it
+  - `m` to hide or show the menu bar
+  - `r` to disable or enable automatic resizing
+    - `Mobile` \\ Double-taps every where in mindmap \\ to enable automatic resizing
+  - `t` to switch theme between light mode/dark mode
+
+## More advanced uses  <!--fold-->
+
+### Tags to \\ **control the display** \\ of the map
+
+#### **Markdown**  <!--fold-->
+
+- `**text**`: to make text **bold**
+- `_text_`: to make text _italic_
+- `[link](URL)`: to insert a [link](https://stevehoang.com)
+- `![](URL)`: to insert an image
+  - `![h​-25](URL)`: to specify \\ the image height (in pixels)
+- ``` `code` ```: To insert `code`
+- `==text==`: To highlight ==text==
+- `++text++`: To underline ++text++
+
+#### **HTML** <!--fold-->
+
+- `<br>` or `\\` to force a line break
+- `<span style="...">text</span>` \\ to change the style of an element
+
+#### **Other \\ tags** <!--fold-->
+
+- `<!--fold-->` at the end of a line to hide \\ sub-branches by default: \\ click the circle to show the rest <!--fold-->
+  - This branch is hidden by default!
+  - This one too!
+- `:code_emoji:`: to insert an emoji code [:heart:](https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json)
+- `{{hidden part}}` to hide part \\ of the text: here's an example with a {{passage}} hidden \\ (click to show/hide)
+
+### A **header** (YAML) \\ for advanced \\ configuration options <!--fold-->
+
+- To specify the maximum \\ width of a branch
+  - ```maxWidth: 300``` - precedence
+  - ```mw: 300```
+- To prevent color changes \\for sub-branches beyond \\a certain level
+  - ```colorFreezeLevel: 2``` \\ (so each branch \\has its own color)
+- To add specific \\CSS styles
+  - ```style: strong{color:red}```
+- To apply a \\ specific theme
+  - ```theme: focus```
+  - Available themes: \\ `focus`, `nolines`, and `black`
+- To use straight lines \\ instead of curves
+  - ```curves: false```
+- To add a title
+  - ```title: My title```
+- To hide sub-branches \\by default beyond \\ a certain level
+  - ```initialExpandLevel: 1```
+- To force links to open \\in a new tab
+  - ```openLinksInNewTab: true```
+- To enable automatic link \\opening and disable the \\confirmation message when leaving
+  - ```disableWarningMessage: true```
+- To control interactivity
+  - ```automaticResize: false``` \\to disable \\automatic resizing
+  - ```focusOnBranch: true``` \\to focus on the clicked branch \\and auto-close others
+  - ```showMenu: false``` \\to hide the menu
+</pre>
+    
+</div>
+	
+
+<div style="width:100vw; height:100vh">
+	<svg id="markmap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="width:100%; height:100%; overflow: visible;" class="svelte-446tkf"></svg>
+</div></main>
+
+
+			
+			<script>
+				{
+					__sveltekit_zwth5d = {
+						base: new URL(".", location).pathname.slice(0, -1),
+						env: {}
+					};
+
+					const element = document.currentScript.parentElement;
+
+					const data = [null,null];
+
+					Promise.all([
+						import("./_app/immutable/entry/start.c8b59587.js"),
+						import("./_app/immutable/entry/app.0802af52.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 2],
+							data,
+							form: null,
+							error: null
+						});
+					});
+				}
+			</script>
+		</div>
+  </body>
+</html>
