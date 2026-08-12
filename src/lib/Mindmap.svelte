@@ -39,6 +39,8 @@
 	let isMac = false;
 	$: description = $markdownSource;
 
+	const hackToForceKatexRenderingInHTMLtags = 'svg g[data-depth="1"] div > span br:nth-of-type(1), svg g[data-depth="2"] div > span br:nth-of-type(1){display:none}';
+
 	onMount(() => {
 		isMobile =
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -50,7 +52,6 @@
 		isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 	})
 	let mm;
-	let initialFitDone = false;
 
 	$: if (maxWidth<250) {
 		widthBlockquote = maxWidth;
@@ -100,7 +101,7 @@
 		});
 	}
 
-	afterUpdate(() => {
+	afterUpdate(async () => {
 		const transformer = new Transformer();
 
 		const {
@@ -117,8 +118,8 @@
 			loadJS
 		} = markmap;
 
-		if (styles) loadCSS(styles);
-		if (scripts) loadJS(scripts, {
+		if (styles) await loadCSS(styles);
+		if (scripts) await loadJS(scripts, {
 			getMarkmap: () => markmap
 		});
 
@@ -135,14 +136,10 @@
 			color: getComputedStyle(document.documentElement).getPropertyValue('--mindmap-branch-colors').split(',').map(c => c.trim()),
 			colorFreezeLevel: colorFreezeLevel,
 		})
-		const optionsFull = colorFreezeLevel > 0 ? {...options, ...optionsJSON} : options
-		mindmap.innerHTML = "";
+		const optionsFull = colorFreezeLevel > 0 ? {...options, ...optionsJSON} : options;
 		mindmapRoot = root;
-		nodeTitle = document.createElement("title")
-		nodeTitle.innerHTML=title;
-		mindmap.appendChild(nodeTitle);
 		const styleCSS = `
-			svg div{margin-top:-4px;} 
+			svg div{margin-top:-2px;}
 			svg a {text-decoration:none} 
 			svg foreignObject {overflow:visible;} 
 			svg strong{
@@ -182,19 +179,19 @@
 				${marginLeftBlockquote}
 			} 
 			svg aside{
-				font-size: 0.8em; 
-				display: inline-block!important; 
+				font-size: 0.8em;
+				display: inline-block;
 				font-weight:normal;
 				vertical-align: top
-			} 
+			}
 			svg cite {
-				font-style:inherit; 
-				font-family:serif; 
+				font-style:inherit;
+				font-family:serif;
 				font-size:0.97em
-			} 
+			}
 			svg code, .markmap-foreign code {
-				color: var(--mindmap-code-color); 
-				background-color: var(--mindmap-code-bg); 
+				color: var(--mindmap-code-color);
+				background-color: var(--mindmap-code-bg);
 				border-radius: var(--code-border-radius);
 				padding: var(--code-padding);
 				font-size: var(--code-font-size);
@@ -203,19 +200,34 @@
 				color: var(--mindmap-code-color) !important;
 				background-color: var(--mindmap-code-bg) !important;
 			}
-		` + style;
-		const styleElement = document.createElement("style")
-		styleElement.innerHTML=styleCSS;
-		mindmap.appendChild(styleElement);
+			.markmap-foreign>div {
+				width: max-content!important;
+				max-width: var(--markmap-max-width)!important;
+			}
+		` + hackToForceKatexRenderingInHTMLtags + style;
 
-		mm=Markmap.create('#markmap', optionsFull, root);
+		const styleElement = document.querySelector("#mindmap-style") || document.createElement("style")
 
-		// Initial fit with a slight delay to ensure proper rendering
-		if (automaticResize && !initialFitDone) {
-			setTimeout(() => {
-				mm.fit();
-				initialFitDone = true;
-			}, 100);
+		if (mm) {
+			// The mindmap already exists: only refresh its data and styles
+			styleElement.innerHTML = styleCSS;
+			// setData is async: fit only once the new layout has been rendered,
+			// otherwise the zoom transform is computed from a stale/empty rect
+			mm.setData(root, optionsFull).then(() => {
+				if (automaticResize) {
+					mm.fit();
+				}
+			});
+		} else {
+			// Otherwise create it
+			nodeTitle = document.createElement("title")
+			nodeTitle.innerHTML = title;
+			mindmap.appendChild(nodeTitle);
+			styleElement.id = "mindmap-style";
+			mindmap.appendChild(styleElement);
+			styleElement.innerHTML = styleCSS;
+			// Markmap.create fits on its own once the initial data is rendered
+			mm = Markmap.create('#markmap', optionsFull, root);
 		}
 
 		if (curves === false) {
@@ -226,8 +238,6 @@
 		if(openLinksInNewTab) {
 			setLinksToOpenInNewTab()
 		}
-
-		
 
 	})
 
@@ -291,14 +301,13 @@
 				const dataPathParentElement = parentElement.getAttribute('data-path');
 				const sameLevelBranches = trimFromLastDot(dataPathParentElement)
 				const unfoldedBranches = mindmap.querySelectorAll('g[data-path^="'+sameLevelBranches+'."]:not(.markmap-fold)')
-				const circleFill = targetElement.getAttribute('fill')
 				for (const branch of unfoldedBranches) {
 					const circle = branch.querySelector('circle');
 					if (circle) {
 						circle.dispatchEvent(new MouseEvent("click"));
 					}
 				}
-				if(!focusOnBranch || circleFill != 'rgb(255, 255, 255)') {
+				if(!focusOnBranch || unfoldedBranches.length > 0) {
 					if(dataPathParentElement != "1") {
 						targetElement.dispatchEvent(new MouseEvent("click"));
 					}
@@ -316,7 +325,7 @@
 		if (targetElement.tagName == 'DIV') {
 			if (modifierKeyPressed) {
 				// Modified behavior: Toggle the hide class to show/hide the branch text
-				targetElement.classList.toggle('hide'); 
+				targetElement.classList.toggle('hide');
 			}
 			else {
 				targetElement.classList.remove('hide');
@@ -338,6 +347,8 @@
 		mm = mm.replace(/<br>/g, '<br/>')
 		mm = mm.replace(/\n/g, ' ')
 		mm = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg id="markmap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="' + mindmap.className['baseVal'] + '" style="width:100%; height:100%;" viewBox="' + boundingBox.x + ' ' + (boundingBox.y) + ' ' + (boundingBox.w) + ' ' + (boundingBox.h) + '">'+'<use xlink:href=""><title>'+title+'</title></use>'+'<desc>'+description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&lt;')+'</desc>'+ mm.replace(/<title>.*<\/title>/,'') + '</svg>'
+		// Sans l'attribut xmlns sur les div, le texte n'est plus visible dans le SVG enregistré
+		mm = mm.replaceAll("<div>","<div xmlns=\"http://www.w3.org/1999/xhtml\">")
 		return mm;
 	}
 
@@ -351,6 +362,15 @@
 	function mindMapSaveAsHtmlCreateFile() {
 		const root = JSON.stringify(mindmapRoot);
 		const escapedDesc = description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&lt;');
+		const branchColors = JSON.stringify(
+			getComputedStyle(document.documentElement)
+				.getPropertyValue('--mindmap-branch-colors')
+				.split(',')
+				.map(c => c.trim())
+				.filter(Boolean)
+		);
+		// Le hack pour Katex s'applique ici en dehors d'un <svg> : on retire le préfixe "svg "
+		const katexHack = hackToForceKatexRenderingInHTMLtags.replaceAll('svg ', '');
 		let templateHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -409,7 +429,7 @@
 	<script src="https://cdn.jsdelivr.net/npm/markmap-view"><\/script>
 	<script>
 		const root=${root};
-		const{Markmap, loadCSS, loadJS}=window.markmap;
+		const{Markmap, loadCSS, loadJS, deriveOptions}=window.markmap;
 		const maxWidth=${maxWidth};
 		const styles=\`
 			div{padding-bottom:0.12em!important}
@@ -448,6 +468,12 @@
 				padding:var(--code-padding);
 				font-size:var(--code-font-size);
 			}
+			.markmap-foreign>div {
+				width: max-content!important;
+				max-width: var(--markmap-max-width)!important;
+			}
+			.katex-html{display:none}
+			${katexHack}
 			${style.replaceAll('"','\\"')}
 		\`;
 		const options={
@@ -458,7 +484,12 @@
 			paddingX:15,
 			autoFit:true
 		};
-		Markmap.create("#markmap", options, root);
+		const optionsJSON = deriveOptions({
+			color:${branchColors},
+			colorFreezeLevel:${colorFreezeLevel}
+		});
+		const optionsFull = ${colorFreezeLevel} > 0 ? {...options, ...optionsJSON} : options;
+		Markmap.create("#markmap", optionsFull, root);
 	<\/script>
 </body>
 </html>`;

@@ -12,18 +12,21 @@
     export let source;
     export let disableWarningMessage;
     import url from "./url.js";
-    import { fade, fly, slide } from "svelte/transition";
-    import { quintOut, elasticOut } from "svelte/easing";
+    import { fade, fly } from "svelte/transition";
+    import { quintOut } from "svelte/easing";
     import { saveAs } from "file-saver-es";
-    import { onMount } from "svelte";
+    import HelpModal from "./HelpModal.svelte";
 
     export let showMenu;
+
+    const disableMenu = !showMenu;
 
     let urlToShare;
     let encodageHash;
     let menu;
     let currentTheme;
     let hasConfirmedReset = false;
+    let showHelp = false;
 
     // Subscribe to theme changes
     theme.subscribe(value => {
@@ -124,10 +127,18 @@
     }
 
     function beforeunload(event) {
-        if (!disableWarningMessage) {
-            event.preventDefault();
-            return (event.returnValue = "");
+        // No confirmation prompt when disableWarningMessage is true in the YAML,
+        // when showMenu is false, or when the URL carries m=0
+        if (
+            disableWarningMessage === true ||
+            disableMenu ||
+            ($url && $url.searchParams && $url.searchParams.get("m") == 0)
+        ) {
+            return;
         }
+
+        event.preventDefault();
+        return (event.returnValue = "");
     }
 
     let showNotification = false;
@@ -167,6 +178,14 @@
                 </button>
                 <button href="#share" on:click|preventDefault={menuShare} class="menu-btn">
                     <i class="fas fa-link"></i>
+                </button>
+                <button
+                    on:click={() => (showHelp = true)}
+                    class="menu-btn"
+                    aria-label="Show the tutorial"
+                    title="Show the tutorial"
+                >
+                    <i class="fas fa-circle-question"></i>
                 </button>
                 <button
                     class="theme-toggle menu-btn"
@@ -209,6 +228,8 @@
         {/if}
     </div>
 {/if}
+
+<HelpModal bind:open={showHelp} />
 
 <style>
     .menu-container {

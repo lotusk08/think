@@ -1,9 +1,17 @@
+<script context="module">
+    import hljs from "highlight.js/lib/core";
+    import markdown from "highlight.js/lib/languages/markdown";
+    import xml from "highlight.js/lib/languages/xml";
+
+    hljs.registerLanguage("markdown", markdown);
+    hljs.registerLanguage("xml", xml);
+</script>
+
 <script>
     import { onMount } from 'svelte';
+    import { get } from 'svelte/store';
     import { show, markdownSource } from './stores.js';
-    import url from './url.js';
     import Turndown from 'turndown';
-    import hljs from 'highlight.js';
 
     let textArea;
     let editor;
@@ -12,6 +20,10 @@
     $: $show ? hidden = "" : hidden = "hidden";
 
     let CodeJar;
+    let firefoxVersion = 0;
+    let unsubscribeFromMarkdownSource = () => {};
+    let syncingFromJar = false;
+    let fallbackValue = "";
 
     const my = editor => {
         let code = editor.textContent;
@@ -22,58 +34,132 @@
             language: 'markdown',
             ignoreUnescapedHTML: false
         }).value;
-        code = code.replace(/\\\\/g, '<span class="language-xml"><span class="hljs-tag">\\\\</span></span>')
-            .replace(/<!--(.*?)-->/g, '<span class="hljs-comment"><!--$1--></span>')
-            .replace(/<!--(\s*?)fold(\s*?)-->/g, '<span class="language-xml"><span class="hljs-special-tag"><!--$1fold$2--></span></span>');
+        // Les caractères < et > sont échappés par highlight.js : on travaille donc sur &lt; et &gt;
+        code = code
+            .replace(/(theme:|maxWidth:|mw:|initialExpandLevel:|colorFreezeLevel:|focusOnBranch:|automaticResize:|openLinksInNewTab:|disableWarningMessage:|showMenu:|curves:|title:)/g,
+                '<span class="hljs-yaml-property">$1</span>')
+            .replace(/\\\\/g, '<span class="language-xml"><span class="hljs-tag">\\\\</span></span>')
+            .replace(/&lt;!--(.*?)--&gt;/g, '<span class="hljs-comment">&lt;!--$1--&gt;</span>')
+            .replace(/&lt;!--(\s*?)fold(\s*?)--&gt;/g, '<span class="language-xml"><span class="hljs-special-tag">&lt;!--$1fold$2--&gt;</span></span>');
         code = code.replace(/@underscore/g, '_');
         editor.innerHTML = code;
     };
 
-    onMount(async () => {
-        const codeJarModule = await import("codejar");
-        CodeJar = codeJarModule.CodeJar;
+    onMount(() => {
+        let mounted = true;
+        fallbackValue = get(markdownSource);
 
-        jar = await CodeJar(editor, my, { history: true });
-        editor.addEventListener('paste', handlePaste);
+        (async () => {
+            ({ CodeJar } = await import("codejar"));
+
+            if (!mounted) {
+                return;
+            }
+
+            jar = CodeJar(editor, my, {
+                history: true,
+                autoclose: { open: `(["`, close: `)]"` },
+            });
+            // CodeJar does not highlight on creation: seed the content through
+            // updateCode so the initial markdown is syntax-highlighted too
+            jar.updateCode(get(markdownSource), false);
+            jar.onUpdate(code => {
+                if (code != get(markdownSource)) {
+                    syncingFromJar = true;
+                    markdownSource.set(code);
+                    syncingFromJar = false;
+                }
+            });
+
+            // L'éditeur est isolé de la réactivité de Svelte : on synchronise à la main
+            unsubscribeFromMarkdownSource = markdownSource.subscribe(code => {
+                if (!jar) {
+                    if (code != fallbackValue) {
+                        fallbackValue = code;
+                    }
+                    return;
+                }
+
+                if (syncingFromJar || code == jar.toString()) {
+                    return;
+                }
+
+                jar.updateCode(code, false);
+            });
+
+            // Capture phase so this runs before CodeJar's own paste handler
+            editor.addEventListener('paste', handlePaste, true);
+
+            const matchFirefoxVersion =
+                window.navigator.userAgent.match(/Firefox\/([0-9]+)\./);
+            firefoxVersion = matchFirefoxVersion
+                ? parseInt(matchFirefoxVersion[1])
+                : 0;
+        })();
+
+        return () => {
+            mounted = false;
+            unsubscribeFromMarkdownSource();
+            if (editor) {
+                editor.removeEventListener('paste', handlePaste, true);
+            }
+            if (jar) {
+                jar.destroy();
+            }
+        };
     });
 
     $: if ($show == true) {
         setTimeout(function () {
             textArea.firstChild.focus();
+            if (firefoxVersion >= 136) {
+                textArea.firstChild.setAttribute("contenteditable", "true");
+            }
         }, 0);
     }
 
-    $: if (jar) {
-        jar.onUpdate(code => {
-            if (jar.toString() != $markdownSource) {
-                markdownSource.update(n => code);
-            }
-        });
-    }
-
+    // Firefox (>= 136 in particular) can expose an HTML-only clipboard: convert it to
+    // Markdown ourselves. When plain text is available, CodeJar's own handler is fine.
     function handlePaste(event) {
-        event.preventDefault();
         const clipboardData = event.clipboardData || window.clipboardData;
-        let pastedText = '';
-
-        if (clipboardData.types.includes('text/plain')) {
-            pastedText = clipboardData.getData('text/plain');
-        } else if (clipboardData.types.includes('text/html')) {
-            const htmlContent = clipboardData.getData('text/html');
-            const turndownService = new Turndown({
-                headingStyle: 'atx',
-                hr: '---',
-                bulletListMarker: '-',
-                codeBlockStyle: 'fenced',
-                emDelimiter: '*'
-            });
-            pastedText = turndownService.turndown(htmlContent);
+        if (!clipboardData || !jar) {
+            return;
         }
 
-        if (pastedText && jar) {
-            jar.insert(pastedText);
-            markdownSource.update(() => jar.toString());
+        const types = Array.from(clipboardData.types || []);
+        if (types.includes('text/plain') || !types.includes('text/html')) {
+            return;
         }
+
+        const turndownService = new Turndown({
+            headingStyle: 'atx',
+            hr: '---',
+            bulletListMarker: '-',
+            codeBlockStyle: 'fenced',
+            emDelimiter: '*'
+        });
+        const pastedText = turndownService
+            .turndown(clipboardData.getData('text/html'))
+            .replace(/\r\n?/g, '\n');
+
+        if (!pastedText) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const pos = jar.save();
+        const start = Math.min(pos.start, pos.end);
+        const end = Math.max(pos.start, pos.end);
+        const code = jar.toString();
+
+        jar.recordHistory();
+        jar.updateCode(code.slice(0, start) + pastedText + code.slice(end));
+        jar.restore({
+            start: start + pastedText.length,
+            end: start + pastedText.length,
+            dir: '<-'
+        });
     }
 </script>
 
@@ -81,9 +167,20 @@
     {#await CodeJar}
         <div>Editor loading...</div>
     {:then}
-        <pre bind:this={editor} contenteditable="true" bind:textContent={$markdownSource} class:hidden={!$show} class="editor"></pre>
+        <div
+            bind:this={editor}
+            contenteditable="true"
+            spellcheck="false"
+            class:hidden={!$show}
+            class="editor">
+        </div>
     {:catch error}
-        <textarea bind:value={$markdownSource} rows="20" cols="50" class:hidden={!$show}></textarea>
+        <textarea
+            value={fallbackValue}
+            on:input={(event) => markdownSource.set(event.currentTarget.value)}
+            rows="20"
+            cols="50"
+            class:hidden={!$show}></textarea>
     {/await}
 </div>
 
@@ -121,6 +218,9 @@
         font-size: 14px;
         letter-spacing: normal;
         line-height: 20px;
+        white-space: pre-wrap;
+        overflow-wrap: normal;
+        overflow-x: auto;
         padding: 10px;
         tab-size: 2;
         resize: horizontal !important;
@@ -134,7 +234,6 @@
     :global(.hljs-section) {
         color: var(--text-color) !important;
         font-weight: 600 !important;
-        /* font-weight: inherit; */
     }
 
     :global(.hljs-strong) {
@@ -151,7 +250,6 @@
 
     :global(.hljs-bullet) {
         color: var(--bullet-color) !important;
-        /*font-weight: 700 !important;*/
     }
 
     :global(.hljs-emphasis) {
@@ -175,5 +273,10 @@
         color: #777 !important;
         font-weight: 100;
         font-size: 0.96em;
+    }
+
+    :global(.hljs-yaml-property) {
+        color: var(--yaml-property-color) !important;
+        font-weight: bold;
     }
 </style>

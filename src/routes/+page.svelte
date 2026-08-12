@@ -28,76 +28,20 @@
 	let theme = '';
 	let curves = true;
 	const corsProxy = "https://corsproxy.io/?url="
-	const focusStyle = `
-		line, path, circle{stroke-width:3} 
-		g[data-depth="0"] circle, g[data-depth="1"] circle{r:7} 
-		g[data-depth="2"] circle{r:3} 
-		circle {r:1} 
-		g[data-depth="0"] line, g[data-depth="1"] line, path[data-depth="1"], circle{stroke-width:10} 
-		g[data-depth="0"] circle {fill:var(--mindmap-primary-color)} 
-		g[data-depth="2"] line, path[data-depth="2"], g[data-depth="1"] circle{stroke-width:6} 
-		div{
-			padding-bottom:0.2em!important; 
-			padding-top:0.2em; 
-			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
-		} 
-		g[data-depth="0"] div{
-			border:2px solid var(--mindmap-primary-color);
-			border-radius:5px; 
-			padding-left:0.5em; 
-			margin-left:-1.3em; 
-			padding-top:0.35em
-		}  
-		g[data-depth="1"] span {
-			background-color:var(--mindmap-secondary-bg); 
-			padding:0.3em 0.5em; 
-			margin-top:-0.35em; 
-			margin-left:-1em; 
-			border-radius:5px;
-		} 
-		div{
-			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
-		} 
-		g[data-depth="2"] div{margin-left:-1em;} 
-		img{height:4em; display:block;}
-	`
-	const nolinesStyle = `
-		line {stroke:transparent} 
-		g[data-depth="0"] line{
-			stroke:var(--mindmap-primary-color); 
-			stroke-width:4
-		} 
-		g div{margin-top:10px;} 
-		g[data-depth="0"] div{
-			border:2px solid var(--mindmap-primary-color);
-			margin-left:-1.4em; 
-			background-color:var(--bg-color); 
-			margin-top:3px; 
-			padding:0.5em; 
-			text-align:center; 
-			border-radius:7px
-		} 
-		g[data-depth="0"] span {display:inline!important;} 
-		circle{r:4} 
-		g[data-depth="0"] circle{r:0} 
-		circle:not([fill="rgb(255, 255, 255)"]){stroke:transparent} 
-		path{stroke-width:2.5;} 
-		path[data-depth="0"],path[data-depth="1"]{stroke-width:4;}
-	`
-	const blackStyle = `
-		line, path, circle{stroke:var(--text-color)} 
-		g[data-depth="0"] line{stroke-width:8} 
-		g[data-depth="1"] line, path[data-depth="1"]{stroke-width:4} 
-		g[data-depth="2"] line, path[data-depth="2"]{stroke-width:2} 
-		circle{r:4} 
-		g[data-depth="0"] circle{r:6} 
-		circle:not([fill="rgb(255, 255, 255)"]){
-			fill:var(--text-color); 
-			stroke:transparent;
-		}
-	`
+	const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace'
+	// Note : depuis markmap 0.18, data-depth commence à 1 pour le nœud racine (et non plus à 0)
+	const focusStyle = 'line, path, circle{stroke-width:3} g[data-depth="1"] circle, g[data-depth="2"] circle{r:7} g[data-depth="3"] circle{r:3} circle {r:1} g[data-depth="1"] line, g[data-depth="2"] line, path[data-depth="2"], circle{stroke-width:10} g[data-depth="1"] circle {fill:var(--mindmap-primary-color)} g[data-depth="3"] line, path[data-depth="3"], g[data-depth="2"] circle{stroke-width:6} div{padding-bottom:0.2em!important; padding-top:0.2em; font-family:' + fontStack + '} g[data-depth="1"] div div{border:2px solid var(--mindmap-primary-color);border-radius:5px; padding-left:0.5em; margin-left:-1.3em; padding-top:0.35em;padding-right:0.75em} g[data-depth="2"] div > span {background-color:var(--mindmap-secondary-bg); padding:0.3em 0.5em; margin-top:-0.35em; margin-left:-1em; border-radius:5px;} div{font-family:' + fontStack + ';} g[data-depth="3"] div{margin-left:-0.25em;} svg div{margin-top:-4px} img{height:4em; display:block;}'
+	const nolinesStyle = 'line {stroke:transparent} g[data-depth="1"] line{stroke:var(--mindmap-primary-color); stroke-width:4} g div div {margin-top:12px;} g[data-depth="1"] div div{border:2px solid var(--mindmap-primary-color); margin-left:-1.4em; background-color:var(--bg-color); margin-top:12px; padding:0.5em; text-align:center; border-radius:7px} g[data-depth="1"] div > span {display:inline!important;} circle{r:4} g[data-depth="1"]:not(.markmap-fold) circle{r:0} path{stroke-width:2.5;} path[data-depth="1"],path[data-depth="2"]{stroke-width:4;}'
+	const blackStyle = 'line, path, circle{stroke:var(--text-color)} g[data-depth="1"] line{stroke-width:8} g[data-depth="2"] line, path[data-depth="2"]{stroke-width:4} g[data-depth="3"] line, path[data-depth="3"]{stroke-width:2} circle{r:4} g[data-depth="1"] circle{r:6} circle:not([fill="var(--markmap-circle-open-bg)"]){fill:var(--text-color); stroke:transparent;}'
 	let focusOnBranch = false;
 	let automaticResize = true;
+
+	
+	// Permet d'éviter d'afficher la mindmap initiale lorsque l'on charge une mindmap depuis une URL
+	if($url && $url.hash) {
+		markdownSource.update(n => '');
+	}
+	
 
 	onMount(async () => {
 		if ($url) {
@@ -136,7 +80,7 @@
 			if (encodageHash != '') {
 				mindmapData = decodeURI(encodageHash);
 				markdownSource.update(n => mindmapData);
-				history.pushState(null, null, $baseURL);    
+				history.pushState(null, null, $baseURL);
 				mindmapFromURL=true;
 			}
 		}
@@ -158,16 +102,16 @@
 		md = md.replace(/\n\n### /g, '\n\n@hash@hash@hash <br>');
 		md = md.replace(/\n### /g, '\n\n@hash@hash@hash ');
 		// Gestion Titre niveau 2
-		md = md.replace(/## (\\\\+)*(.*)$/g, '@hash@hash $1<span style="font-weight:bold; font-size:1em; display:block; padding-bottom:0.3em">$2</span>\n');
-		md = md.replace(/## (\\\\+)*(.*)\n/g, '@hash@hash $1<span style="font-weight:bold; font-size:1em; display:block; padding-bottom:0.3em">$2</span>\n');
+		md = md.replace(/## (\\\\+)*(.*)$/g, '@hash@hash $1<span style="font-weight:bold; font-size:1em; display:block; padding-bottom:0.3em"><br>$2</span>\n');
+		md = md.replace(/## (\\\\+)*(.*)\n/g, '@hash@hash $1<span style="font-weight:bold; font-size:1em; display:block; padding-bottom:0.3em"><br>$2</span>\n');
 		// Gestion Titre niveau 1
-		md = md.replace(/# (.*)$/g, '@hash <span style="font-weight:bold; font-size:1.3em; display:block; padding-bottom:0.6em">$1</span>\n');
-		md = md.replace(/# (.*)\n/g, '@hash <span style="font-weight:bold; font-size:1.3em; display:block; padding-bottom:0.6em">$1</span>\n');
+		md = md.replace(/# (.*)$/g, '@hash <span style="font-weight:bold; font-size:1.3em; display:block; padding-bottom:0.6em"><br>$1</span>\n');
+		md = md.replace(/# (.*)\n/g, '@hash <span style="font-weight:bold; font-size:1.3em; display:block; padding-bottom:0.6em"><br>$1</span>\n');
 		// Gestion Listes à puces
 		md = md.replace(/\n\n- /g, '\n\n- <br>');
 		md = md.replace(/\n\n\* /g, '\n\n\* <br>');
 		// Gestion des lignes qui se terminent par une balise code
-		md = md.replace(/`\n/g, '`<span style="display:block; height:0.2em!important"><br></span>\n');
+		md = md.replace(/`\n/g, '`\n<span style="display:block; height:0.2em!important"><br></span>\n');
 		// Remplacement de @hash par #
 		md = md.replace(/@hash/g, '#');
 		// Raccourci \\ pour les sauts de ligne <br>
@@ -185,6 +129,8 @@
 		md = md.replace(/ /g, '&nbsp;');
 		// Gestion des images : définition possible de la hauteur dans le alt
 		md = md.replace(/\!\[h-(.*?)\]\((.*?)\)/g, '<img src="$2" height=$1 />')
+		// Gestion de la nouvelle syntaxe pour les Magic comments "fold"
+		md = md.replace(/([^`])<!--fold-->(<\/span>)?/g, "$1$2<!-- markmap: fold -->")
 		return md;
 	}
 
@@ -213,21 +159,25 @@
 				}
 				if (theme == 'nolines') {
 					style = nolinesStyle + ' ' + style;
+					style = $markdownSource.includes("$") ? 'div{padding-bottom:0.2em!important;}'  + ' ' + style : style;
 				}
 				if (theme == 'black') {
 					style = blackStyle + ' ' + style;
+					style = $markdownSource.includes("$") ? 'div{padding-bottom:0.2em!important;}'  + ' ' + style : style;
 					curves = yamlData.hasOwnProperty('curves') ? yamlData.curves : false;
 				}
 			} else {
 				// Check for maxWidth or mw, with maxWidth taking precedence
 				maxWidthFromYAML = yamlData.hasOwnProperty('maxWidth') ? yamlData.maxWidth : (yamlData.hasOwnProperty('mw') ? yamlData.mw : 500);
-				colorFreezeLevel = yamlData.hasOwnProperty('colorFreezeLevel') ? yamlData.colorFreezeLevel : 0;
+				colorFreezeLevel = yamlData.hasOwnProperty('colorFreezeLevel') ? yamlData.colorFreezeLevel : 100;
 				curves = yamlData.hasOwnProperty('curves') ? yamlData.curves : true;
-				style = style;
+				style = $markdownSource.includes("$") ? 'div{padding-bottom:0.2em!important;}'  : style;
 			}
 		} catch (e) {
 			console.error('Error parsing YAML:', e);
 		}
+	} else {
+		style = $markdownSource.includes("$") ? 'div{padding-bottom:0.2em!important;}'  : style;
 	}
 
 	$: mindmapSource = replaceMarkdown(emoji.emojify($markdownSource))
@@ -244,3 +194,9 @@
 		<Mindmap source={mindmapSource} maxWidth={maxWidthFromYAML} style={style} title={title} colorFreezeLevel={colorFreezeLevel} initialExpandLevel={initialExpandLevel} {openLinksInNewTab} {curves} {focusOnBranch} {automaticResize} />
 	{/if}
 </main>
+
+<style>
+	:global(body) {
+		overflow:hidden;
+	}
+</style>
