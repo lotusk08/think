@@ -1,22 +1,26 @@
-On peut dans l'en-tête YAML de son fichier Markdown configurer l'apparence de sa carte mentale avec différentes options.
+You can configure the appearance of your mind map with several options in the YAML header of your Markdown text.
 
-### Thèmes et styles
+### Themes and styles
 
-Plusieurs thèmes sont disponibles : `nolines`, `focus`, `default`, `black`.
-On active un thème avec l'option `theme: nom_du_thème`.
+Several themes are available: `nolines`, `focus`, `default`, `black`.
+Enable one with the option `theme: theme_name`.
 
-On peut aussi ajouter des styles CSS spécifiques avec l'option `style: code_CSS`, ou en multilignes avec le bloc `style: |` suivi du code CSS indenté à partir de la ligne suivante.
+Think tree also follows your system's light or dark mode, and you can switch manually with the moon/sun icon or the `t` key.
+
+You can add your own CSS with the option `style: CSS_code`, or across multiple lines with a `style: |` block followed by the CSS indented from the next line onwards.
 
 ```
 style: |
-  /* code CSS ici */
+  /* your CSS here */
 ```
 
 ### Branches
 
-Pour définir le niveau de profondeur des branches affichée au départ, on utilise l'option `initialExpandLevel: n` (n correspond au niveau de profondeur).
+To set how deep the branches are expanded at first, use `initialExpandLevel: n` (where n is the depth level).
 
-Pour que chaque ligne ne dépasse pas une certaine largeur, on ajoute `maxWidth: nombre_de_pixels`
-Pour que chaque sous-branche ait la même couleur à partir d'un certain niveau, on utilise `colorFreezeLevel: niveau_de_début_du_gel_des_couleurs`.
+To stop each line from growing past a given width, add `maxWidth: number_of_pixels` (`mw` also works as a shorthand).
+To make every sub-branch share the same colour from a given level onwards, use `colorFreezeLevel: level_at_which_colours_freeze`.
 
-Si on veut des lignes droites plutôt que des courbes entre les nœuds, on peut ajouter l'option `curves: false`.
+If you prefer straight lines rather than curves between nodes, add the option `curves: false`.
+
+To give the map a title (used when saving), add `title: My title`.

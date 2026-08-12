@@ -2,9 +2,9 @@
 	import {
 		onMount
 	} from 'svelte';
-	import emoji from 'node-emoji';
+	import { emojify } from 'node-emoji';
 	import url from '../lib/url.js';
-	import yaml from 'js-yaml';
+	import { load as loadYaml } from 'js-yaml';
 	import Menu from '../lib/Menu.svelte';
 	import Editor from '../lib/Editor.svelte';
 	import Mindmap from '../lib/Mindmap.svelte';
@@ -136,7 +136,7 @@
 
 	$: if ($markdownSource.split("---").length > 2) {
 		try {
-			yamlData = yaml.load($markdownSource.split("---")[1]);
+			yamlData = loadYaml($markdownSource.split("---")[1]);
 			title = yamlData.hasOwnProperty('title') ? yamlData.title : 'Mindmap';
 			style = yamlData.hasOwnProperty('style') ? yamlData.style : '';
 			openLinksInNewTab = yamlData.hasOwnProperty('openLinksInNewTab') ? yamlData.openLinksInNewTab : false;
@@ -180,7 +180,7 @@
 		style = $markdownSource.includes("$") ? 'div{padding-bottom:0.2em!important;}'  : style;
 	}
 
-	$: mindmapSource = replaceMarkdown(emoji.emojify($markdownSource))
+	$: mindmapSource = replaceMarkdown(emojify($markdownSource))
 
 </script>
 

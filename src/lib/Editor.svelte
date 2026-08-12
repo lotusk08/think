@@ -111,9 +111,15 @@
 
     $: if ($show == true) {
         setTimeout(function () {
-            textArea.firstChild.focus();
-            if (firefoxVersion >= 136) {
-                textArea.firstChild.setAttribute("contenteditable", "true");
+            // Svelte 5 renders anchor comments around blocks, so textArea.firstChild
+            // is not necessarily the editable element: target it explicitly.
+            const target = editor || textArea?.querySelector("textarea");
+            if (!target) {
+                return;
+            }
+            target.focus();
+            if (editor && firefoxVersion >= 136) {
+                editor.setAttribute("contenteditable", "true");
             }
         }, 0);
     }

@@ -14,7 +14,6 @@
     import url from "./url.js";
     import { fade, fly } from "svelte/transition";
     import { quintOut } from "svelte/easing";
-    import { saveAs } from "file-saver-es";
     import HelpModal from "./HelpModal.svelte";
 
     export let showMenu;
@@ -162,21 +161,21 @@
         <nav id="menu" bind:this={menu} class:edit-mode={$show}>
             <div class="menu-items">
                 {#if $show}
-                    <button href="#edit" on:click|preventDefault={menuView} class="menu-btn">
+                    <button on:click|preventDefault={menuView} class="menu-btn" aria-label="Show only the mind map" title="Show only the mind map (Escape)">
                         <i class="fas fa-eye"></i>
                     </button>
                 {:else}
-                    <button href="#edit" on:click|preventDefault={menuEdit} class="menu-btn">
+                    <button on:click|preventDefault={menuEdit} class="menu-btn" aria-label="Edit the mind map" title="Edit the mind map (e)">
                         <i class="fas fa-pen"></i>
                     </button>
                 {/if}
-                <button href="#saveHTML" on:click|preventDefault={menuSaveAsHtml} class="menu-btn">
+                <button on:click|preventDefault={menuSaveAsHtml} class="menu-btn" aria-label="Save as HTML" title="Save as HTML — still interactive (h)">
                     <i class="fas fa-file-code"></i>
                 </button>
-                <button href="#saveSVG" on:click|preventDefault={menuSaveAsSvg} class="menu-btn">
+                <button on:click|preventDefault={menuSaveAsSvg} class="menu-btn" aria-label="Save as SVG" title="Save as SVG — static image (s)">
                     <i class="fas fa-file-arrow-down"></i>
                 </button>
-                <button href="#share" on:click|preventDefault={menuShare} class="menu-btn">
+                <button on:click|preventDefault={menuShare} class="menu-btn" aria-label="Copy a sharing link" title="Copy a sharing link (l)">
                     <i class="fas fa-link"></i>
                 </button>
                 <button
@@ -205,11 +204,11 @@
             <div class="eraser-container">
                 {#if $show}
                     <button
-                        href="#reset"
                         on:click|preventDefault={menuReset}
                         transition:fade={{ duration: 200 }}
                         class="menu-btn"
-                        title="Clear mindmap and browser cache"
+                        aria-label="Clear mind map and browser cache"
+                        title="Clear mind map and browser cache"
                     >
                         <i class="fas fa-eraser" style="color: #d360d4;"></i>
                     </button>

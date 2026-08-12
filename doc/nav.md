@@ -1,27 +1,27 @@
-### Navigation de base
+### Basic navigation
 
-On peut cliquer sur les cercles à l'intersection des différentes branches pour afficher ou masquer la suite.
+Click the circles at the intersection of branches to show or hide the rest.
 
-On peut se déplacer dans la carte mentale en cliquant-glissant avec la souris.
+Drag with the mouse to move around the mind map.
 
-On peut aussi zoomer en utilisant la molette de la souris ou le pincement sur un écran tactile.
+You can also zoom with the mouse wheel, or by pinching on a touch screen.
 
-### Expansion et repli des branches
+### Expanding and folding branches
 
-On peut définir dans l'en-tête YAML le niveau initial d'expansion des branches avec `initialExpandLevel: n` (n correspond au niveau de profondeur).
+You can set the initial expansion level of the branches in the YAML header with `initialExpandLevel: n` (where n is the depth level).
 
-On peut aussi choisir de masquer les sous-branches d'un nœud en ajoutant `<!--fold-->` à la fin de la ligne correspondante dans le texte Markdown.
+You can also hide the sub-branches of a node by adding `<!--fold-->` at the end of the corresponding line in the Markdown text.
 
-Par défaut, la carte mentale est automatiquement redimensionnée pour s'adapter à la taille de la fenêtre.
+By default the mind map is automatically resized to fit the window.
 
-On peut désactiver cette fonctionnalité en ajoutant dans l'en-tête YAML la ligne suivante : `automaticResize: false`, ou en appuyant sur la touche `r` du clavier pour activer ou désactiver le redimensionnement automatique.
+You can turn this off by adding the line `automaticResize: false` to the YAML header, or by pressing the `r` key to toggle automatic resizing. On mobile, double-tap anywhere on the mind map to toggle it.
 
-### Focalisation sur une branche
+### Focusing on a branch
 
-_Alt+clic_ sur un cercle permet d'afficher seulement les sous-branches de ce cercle.
+_Command+click_ (macOS) or _Alt+click_ (Windows and Linux) on a circle shows only the sub-branches of that circle.
 
-On peut aussi activer cette fonctionnalité par défaut en ajoutant dans l'en-tête YAML la ligne suivante : `focusOnBranch: true`.
+You can also enable this behaviour by default by adding the line `focusOnBranch: true` to the YAML header.
 
-### Masquage du texte d'une branche
+### Hiding the text of a branch
 
-On peut cacher le texte d'une branche en cliquant dessus avec _Alt+clic_, ou en utilisant la syntaxe `{{texte masqué}}` dans le Markdown.
+You can hide the text of a branch by _Command+click_ (macOS) or _Alt+click_ (Windows and Linux) on it, or by using the `{{hidden text}}` syntax in the Markdown.

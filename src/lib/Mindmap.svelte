@@ -9,6 +9,7 @@
 	} from 'markmap-lib';
 	import * as markmap from 'markmap-view';
 	import {deriveOptions} from 'markmap-view';
+	import { saveAs } from './saveAs.js';
 	import {
 		mindmapSaveAsSvg,
 		mindmapSaveAsHtml,
@@ -139,6 +140,15 @@
 		const optionsFull = colorFreezeLevel > 0 ? {...options, ...optionsJSON} : options;
 		mindmapRoot = root;
 		const styleCSS = `
+			svg#markmap {
+				/* markmap ships its own light-only palette on .markmap:
+				   remap it onto the app theme so text stays readable in dark mode */
+				--markmap-text-color: var(--text-color);
+				--markmap-code-bg: var(--mindmap-code-bg);
+				--markmap-code-color: var(--mindmap-code-color);
+				--markmap-circle-open-bg: var(--bg-color);
+				--markmap-table-border: 1px solid var(--border-color);
+			}
 			svg div{margin-top:-2px;}
 			svg a {text-decoration:none} 
 			svg foreignObject {overflow:visible;} 
@@ -411,6 +421,14 @@
 		* { margin:0; padding:0 }
 		body { background-color: var(--bg-color); color: var(--text-color); }
 		#markmap { display:block; width:100vw; height:100vh }
+		svg#markmap {
+			/* markmap ships a light-only palette on .markmap: remap it onto the theme */
+			--markmap-text-color: var(--text-color);
+			--markmap-code-bg: var(--mindmap-code-bg);
+			--markmap-code-color: var(--mindmap-code-color);
+			--markmap-circle-open-bg: var(--bg-color);
+			--markmap-table-border: 1px solid var(--mindmap-blockquote-border);
+		}
 		.markmap-foreign code {
 			color: var(--mindmap-code-color) !important;
 			background-color: var(--mindmap-code-bg) !important;
@@ -525,8 +543,9 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div bind:clientWidth={w} bind:clientHeight={h} style="width:100vw; height:100vh">
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<svg id="markmap" bind:this={mindmap} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+		role="presentation"
 		style="width:100%; height:100%; overflow: visible;" on:click={handleHide} on:touchstart={handleTouchStart}>
 	</svg>
 </div>

@@ -1,34 +1,34 @@
-### Syntaxe de base
+### Basic syntax
 
-`**texte**` : pour mettre en gras  
-`_texte_` : pour mettre en italique  
-`==texte==`: Pour surligner  
-`++texte++`: Pour souligner
-
-
-`[lien](URL)` : pour insérer un lien (voir les options plus avancées ci-dessous)  
-`![](URL)` : pour insérer une image  
-`![h​-25](URL)` : pour spécifier la hauteur de l'image (en pixels)
-
-`code` : Pour insérer du code
-
-`<br>` ou `\\` pour forcer le passage à la ligne  
-`<span style="">texte</span>` pour changer le style d'un élément avec du style CSS
+`**text**` : to make text bold  
+`_text_` : to make text italic  
+`==text==` : to highlight text  
+`++text++` : to underline text
 
 
-### Autres éléments utiles
+`[link](URL)` : to insert a link (see the more advanced options below)  
+`![](URL)` : to insert an image  
+`![h​-25](URL)` : to set the image height (in pixels)
 
-`{{partie masquée}}` pour masquer une partie d'un texte
+`code` : to insert code
 
-`<!--fold-->` en fin de ligne pour que les sous-branches soient cachées par défaut : il faut cliquer sur le cercle pour afficher la suite
-
-`:code_emoji:` : pour insérer un code pour un emoji
-
+`<br>` or `\\` to force a line break  
+`<span style="">text</span>` to change the style of an element with CSS
 
 
-### Options pour les liens
+### Other useful elements
 
-Dans l'en-tête YAML de son fichier Markdown, on peut ajouter des options pour les liens :
+`{{hidden part}}` to hide part of a text
 
-Pour forcer l'ouverture des liens dans un nouvel onglet, on ajoute la ligne : `openLinksInNewTab: true`  
-Pour permettre l'ouverture automatique des liens et empêcher l'affichage du message de confirmation pour quitter la page, on ajoute la ligne : `disableWarningMessage: true`
+`<!--fold-->` at the end of a line so that its sub-branches are hidden by default: click the circle to reveal the rest
+
+`:emoji_code:` : to insert an emoji from its code
+
+
+
+### Options for links
+
+You can add options for links in the YAML header of your Markdown text:
+
+To force links to open in a new tab, add the line: `openLinksInNewTab: true`  
+To allow links to open automatically and suppress the confirmation message when leaving the page, add the line: `disableWarningMessage: true`

@@ -1,8 +1,8 @@
-### Éditer sa carte mentale
+### Editing your mind map
 
-Il faut cliquer sur ✒️ en haut à gauche pour éditer sa carte mentale (_raccourci clavier : `e`_)
+Click on the pen icon at the bottom left to edit your mind map (_keyboard shortcut: `e`_).
 
-On crée sa carte mentale en Markdown dans la fenêtre d'édition à gauche, et on définit les options dans l'en-tête YAML en haut du fichier Markdown.
+You write your mind map in Markdown in the editing window, and set the options in the YAML header at the top of the Markdown text.
 
 ```
 ---
@@ -10,16 +10,18 @@ theme: focus
 initialExpandLevel: 2
 maxWidth: 300
 ---
-# Ma carte mentale
+# My mind map
 
-## Branche 1
-- Texte
+## Branch 1
+- Some text
 ```
 
-Un clic sur le balai 🧹 permet de réinitialiser la carte mentale pour repartir à zéro.
+Clicking the eraser icon resets the mind map so you can start from scratch.
 
-Le rendu s'affiche automatiquement dans la carte mentale à droite.
+The result is rendered automatically in the mind map next to the editor.
 
-### Voir sa carte mentale
+### Viewing your mind map
 
-Clic sur 👓  pour cacher la fenêtre d'édition et voir seulement la carte mentale (_raccourci clavier : `Escape`_)
+Click on the eye icon to hide the editing window and see only the mind map (_keyboard shortcut: `Escape`_).
+
+Press `t` at any time to switch between the light and dark themes.

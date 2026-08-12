@@ -1,6 +1,6 @@
 {
   "name": "Think tree",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -8,24 +8,24 @@
     "deploy": "npm run build && touch build/.nojekyll && gh-pages -d build -t true"
   },
   "devDependencies": {
-    "@sveltejs/adapter-auto": "^1.0.3",
-    "@sveltejs/kit": "^1.30.3",
-    "svelte": "^3.59.2",
-    "vite": "^4.5.2"
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/kit": "^2.70.2",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "svelte": "^5.56.8",
+    "vite": "^8.2.1"
   },
   "type": "module",
   "dependencies": {
-    "@sveltejs/adapter-static": "^1.0.6",
+    "@sveltejs/adapter-static": "^3.0.10",
     "codejar": "^4.3.0",
-    "file-saver-es": "^2.0.5",
-    "gh-pages": "^5.0.0",
-    "highlight.js": "^11.11.1",
-    "js-yaml": "^4.1.0",
+    "gh-pages": "^6.3.0",
+    "highlight.js": "^11.11.2",
+    "js-yaml": "^5.2.3",
     "markmap-common": "^0.18.9",
     "markmap-lib": "^0.18.12",
     "markmap-view": "^0.18.12",
-    "marked": "^5.1.1",
-    "node-emoji": "^1.11.0",
-    "turndown": "^7.2.0"
+    "marked": "^18.0.9",
+    "node-emoji": "^2.2.0",
+    "turndown": "^7.2.4"
   }
 }

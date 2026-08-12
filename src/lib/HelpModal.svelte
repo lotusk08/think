@@ -35,6 +35,8 @@
 		class="modal-backdrop"
 		on:click={onBackdropClick}
 		on:keydown={handleBackdropKeydown}
+		role="button"
+		aria-label="Close the tutorial"
 		tabindex="-1"
 		transition:fade>
 		<div
@@ -44,16 +46,16 @@
 			aria-labelledby="help-modal-title">
 				<header class="modal-header">
 					<div class="header-row">
-						<h2 id="help-modal-title">Tutoriel</h2>
-						<button class="close-btn" on:click={close} aria-label="Fermer">✖</button>
+						<h2 id="help-modal-title">Tutorial</h2>
+						<button class="close-btn" on:click={close} aria-label="Close">✖</button>
 					</div>
 
 						<div role="tablist" class="tab-buttons">
-							<button class="tab-button" on:click={() => (activeTab = "create")} aria-selected={activeTab === "create"} role="tab">Créer une carte</button>
-							<button class="tab-button" on:click={() => (activeTab = "share")} aria-selected={activeTab === "share"} role="tab">Partager une carte</button>
-							<button class="tab-button" on:click={() => (activeTab = "nav")} aria-selected={activeTab === "nav"} role="tab">Naviguer dans la carte</button>
-							<button class="tab-button" on:click={() => (activeTab = "appearance")} aria-selected={activeTab === "appearance"} role="tab">Configurer l'apparence</button>
-							<button class="tab-button" on:click={() => (activeTab = "markdown")} aria-selected={activeTab === "markdown"} role="tab">La syntaxe markdown</button>
+							<button class="tab-button" on:click={() => (activeTab = "create")} aria-selected={activeTab === "create"} role="tab">Create a map</button>
+							<button class="tab-button" on:click={() => (activeTab = "share")} aria-selected={activeTab === "share"} role="tab">Share a map</button>
+							<button class="tab-button" on:click={() => (activeTab = "nav")} aria-selected={activeTab === "nav"} role="tab">Navigate the map</button>
+							<button class="tab-button" on:click={() => (activeTab = "appearance")} aria-selected={activeTab === "appearance"} role="tab">Appearance</button>
+							<button class="tab-button" on:click={() => (activeTab = "markdown")} aria-selected={activeTab === "markdown"} role="tab">Markdown syntax</button>
 							
 					</div>
 				</header>
@@ -93,7 +95,7 @@
 					</div>
 				</div>
 			<footer class="modal-footer">
-				<button class="primary" on:click={close}>Fermer</button>
+				<button class="primary" on:click={close}>Close</button>
 			</footer>
 		</div>
 	</div>
