@@ -14,7 +14,6 @@
     import url from "./url.js";
     import { fade, fly } from "svelte/transition";
     import { quintOut } from "svelte/easing";
-    import HelpModal from "./HelpModal.svelte";
 
     export let showMenu;
 
@@ -24,8 +23,6 @@
     let encodageHash;
     let menu;
     let currentTheme;
-    let hasConfirmedReset = false;
-    let showHelp = false;
 
     // Subscribe to theme changes
     theme.subscribe(value => {
@@ -68,28 +65,36 @@
     }
 
     function menuReset() {
-        const isInitialContent = $markdownSource === initialDemoContent;
-        const isDefaultTemplate = $markdownSource === defaultTemplate;
+        // Only ask before throwing away something the user actually wrote:
+        // the demo map and the blank template are not worth confirming.
+        const isUntouched =
+            $markdownSource === initialDemoContent ||
+            $markdownSource === defaultTemplate;
 
-        if (isInitialContent || isDefaultTemplate || (hasConfirmedReset && confirm("This will clear your current data. Sure?"))) {
-            localStorage.clear();
-            
-            sessionStorage.clear();
-            
-            if (window.caches) {
-                caches.keys().then(function(names) {
-                    for (let name of names) {
-                        caches.delete(name);
-                    }
-                });
-            }
-            
-            markdownSource.update((content) => defaultTemplate);
-            
-            hasConfirmedReset = true;
-            
-            toastNotification("Data cleared!");
+        if (!isUntouched && !confirm("This will clear your current data. Sure?")) {
+            return;
         }
+
+        // The theme is the only thing worth keeping across a reset
+        const savedTheme = localStorage.getItem("theme");
+        localStorage.clear();
+        if (savedTheme) {
+            localStorage.setItem("theme", savedTheme);
+        }
+
+        sessionStorage.clear();
+
+        if (window.caches) {
+            caches.keys().then(function (names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
+        }
+
+        markdownSource.set(defaultTemplate);
+
+        toastNotification("Data cleared!");
     }
 
     function handleKeydown(event) {
@@ -179,14 +184,6 @@
                     <i class="fas fa-link"></i>
                 </button>
                 <button
-                    on:click={() => (showHelp = true)}
-                    class="menu-btn"
-                    aria-label="Show the tutorial"
-                    title="Show the tutorial"
-                >
-                    <i class="fas fa-circle-question"></i>
-                </button>
-                <button
                     class="theme-toggle menu-btn"
                     on:click={toggleTheme}
                     on:keydown={(e) => e.key === 'Enter' && toggleTheme()}
@@ -227,8 +224,6 @@
         {/if}
     </div>
 {/if}
-
-<HelpModal bind:open={showHelp} />
 
 <style>
     .menu-container {
