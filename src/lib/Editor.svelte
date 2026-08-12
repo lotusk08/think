@@ -16,9 +16,6 @@
     let textArea;
     let editor;
     let jar;
-    let hidden;
-    $: $show ? hidden = "" : hidden = "hidden";
-
     let CodeJar;
     let firefoxVersion = 0;
     let unsubscribeFromMarkdownSource = () => {};
@@ -211,9 +208,13 @@
         }
     }
 
-    textarea,
+    /* display:none rather than visibility:hidden: Safari paints the resize grip
+       of a resizable element in its own layer and keeps drawing it when the
+       element is merely invisible, leaving the handle floating over the map.
+       The bare `textarea` selector used to live here too, which permanently
+       hid the fallback editor CodeJar falls back to. */
     :global(.hidden) {
-        visibility: hidden;
+        display: none;
     }
 
     :global(.editor) {
