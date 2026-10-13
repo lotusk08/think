@@ -84,26 +84,29 @@
         --code-border-radius: 2px;
       }
 
-      [data-theme="dark"] {
-        --bullet-color: #ff6800;
-        --bg-color: #1a1a1a;
-        --text-color: #e8e8e8;
-        --border-color: #404040;
-        --menu-bg: rgba(0, 0, 0, 0.2);
-        --editor-bg: rgba(0, 0, 0, 0.1);
-        --icon-color: #9e9e9e;
-        --icon-hover: #ff7f50;
-        --link-color: #c67839;
-        /* Mindmap specific colors */
-        --mindmap-code-bg: #2d2d2d;
-        --mindmap-code-color: #e0e0e0;
-        --mindmap-blockquote-border: #555;
-        --mindmap-hide-bg: rgba(80, 80, 80, 0.85);
-        --mindmap-branch-colors: #3498db, #e67e22, #2ecc71, #e74c3c, #9b59b6, #e377c2, #17becf, #f1c40f;
-        /* Theme-specific colors */
-        --mindmap-primary-color: #3498db;
-        --mindmap-secondary-bg: #2d2d2d;
-        --yaml-property-color: #7ec699;
+      /* Screen only: paper is white, so prints and PDFs always use the light palette */
+      @media screen {
+        [data-theme="dark"] {
+          --bullet-color: #ff6800;
+          --bg-color: #1a1a1a;
+          --text-color: #e8e8e8;
+          --border-color: #404040;
+          --menu-bg: rgba(0, 0, 0, 0.2);
+          --editor-bg: rgba(0, 0, 0, 0.1);
+          --icon-color: #9e9e9e;
+          --icon-hover: #ff7f50;
+          --link-color: #c67839;
+          /* Mindmap specific colors */
+          --mindmap-code-bg: #2d2d2d;
+          --mindmap-code-color: #e0e0e0;
+          --mindmap-blockquote-border: #555;
+          --mindmap-hide-bg: rgba(80, 80, 80, 0.85);
+          --mindmap-branch-colors: #3498db, #e67e22, #2ecc71, #e74c3c, #9b59b6, #e377c2, #17becf, #f1c40f;
+          /* Theme-specific colors */
+          --mindmap-primary-color: #3498db;
+          --mindmap-secondary-bg: #2d2d2d;
+          --yaml-property-color: #7ec699;
+        }
       }
 
       body {

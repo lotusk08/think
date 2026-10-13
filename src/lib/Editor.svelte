@@ -151,6 +151,12 @@
         display: none;
     }
 
+    @media print {
+        .editor {
+            display: none;
+        }
+    }
+
     .editor {
         border: 0.2px solid var(--border-color);
         border-radius: 6px;

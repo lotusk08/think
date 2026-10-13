@@ -20,11 +20,12 @@ Markdown is used to create branches
     - \`### Level 3\`, \`#### Level 4\` …
   - Or use a bulleted list
     - \\\\ \`- Level 3\` \\\\ 　\`  - Level 4\` - add 2 spaces before to move to another level \\\\ \`- Level 3\`
-- Click on <i class="fas fa-eye"></i> to **hide** the editing window \\ and view only the mind map \\\\ (_keyboard shortcut: \`Escape\`)
-- **Save** and \\\\ share your \\\\ mind map
-  - Click on <i class="fas fa-file-arrow-down"></i> to **save** the map as an _svg_ file \\\\ [static image] (_keyboard shortcut: \`s\`)
-  - Click on <i class="fas fa-file-code"></i> to **save** as an HTML file \\\\ [with interactivity] (_keyboard shortcut: \`h\`)
-  - Click on <i class="fas fa-link"></i> to copy a **sharing link** \\\\ for the mind map (_keyboard shortcut: \`l\`)
+- Click on <i class="fas fa-eye"></i> to **hide** the editing window \\ and view only the mind map \\\\ (_keyboard shortcut: \`Escape\`_)
+- Click on <i class="fas fa-file-export"></i> to **export** \\\\ and share your mind map
+  - **PDF**: print-ready vector file, \\\\ pick _Save as PDF_ when printing (_keyboard shortcut: \`p\`_)
+  - **SVG**: static vector image (_keyboard shortcut: \`s\`_)
+  - **HTML**: interactive web page (_keyboard shortcut: \`h\`_)
+  - **Copy link**: a **sharing link** \\\\ for the mind map (_keyboard shortcut: \`l\`_)
     - Add \`?m=0\` to the URL to hide the menu
   - You can store your text \\\\ on **Obsidian** or on [Stackedit](https://stackedit.io) \\\\ and display it with Think tree
     - It's recommended to save the text \\\\ of your mind map somewhere so \\\\ you can edit it later <!--fold-->

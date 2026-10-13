@@ -5,8 +5,7 @@
 	import { saveAs } from './saveAs.js';
 	import { escapeHtml } from './markdown.js';
 	import {
-		mindmapSaveAsSvg,
-		mindmapSaveAsHtml,
+		exportRequest,
 		markdownSource,
 		show,
 		theme
@@ -395,18 +394,49 @@
 		saveAs(new File([content], name, { type: 'text/plain;charset=utf-8' }));
 	}
 
-	$: if ($mindmapSaveAsSvg) {
-		saveFile(createSVG(), 'mindmap.svg');
-		mindmapSaveAsSvg.set(false);
+	const fileExports = {
+		svg: () => saveFile(createSVG(), 'mindmap.svg'),
+		html: () => saveFile(createHTML(), 'mindmap.html')
+	};
+
+	$: if ($exportRequest) {
+		fileExports[$exportRequest]();
+		exportRequest.set(null);
 	}
 
-	$: if ($mindmapSaveAsHtml) {
-		saveFile(createHTML(), 'mindmap.html');
-		mindmapSaveAsHtml.set(false);
+	// Print / Save as PDF (from the menu or Cmd/Ctrl+P): fit the whole map on one
+	// page, oriented to suit its shape, then put the view back as it was
+	let printState;
+
+	function handleBeforePrint() {
+		// Already laid out for print (beforeprint can fire again before afterprint)
+		if (!mm || printState) return;
+		const group = mm.g.node();
+		const { x, y, width, height } = group.getBBox();
+		const margin = 20;
+		const pageStyle = document.createElement('style');
+		pageStyle.textContent = `@page { size: ${width >= height ? 'landscape' : 'portrait'}; margin: 10mm; }`;
+		document.head.append(pageStyle);
+		printState = { transform: group.getAttribute('transform'), documentTitle: document.title, pageStyle };
+
+		group.removeAttribute('transform');
+		mindmap.setAttribute('viewBox', `${x - margin} ${y - margin} ${width + 2 * margin} ${height + 2 * margin}`);
+		// Browsers name the PDF after the page title
+		document.title = String(title);
+	}
+
+	function handleAfterPrint() {
+		if (!printState) return;
+		const { transform, documentTitle, pageStyle } = printState;
+		if (transform) mm.g.node().setAttribute('transform', transform);
+		mindmap.removeAttribute('viewBox');
+		document.title = documentTitle;
+		pageStyle.remove();
+		printState = undefined;
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} on:beforeprint={handleBeforePrint} on:afterprint={handleAfterPrint} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <svg id="markmap" bind:this={mindmap} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -421,23 +451,4 @@
 		left: 0;
 		overflow: visible;
 	}
-
-	@media print {
-		:global(nav) {
-			display: none;
-		}
-
-		:global(main) {
-			width: 31.7cm;
-			height: 20cm;
-		}
-
-		:global(main svg) {
-			overflow: visible;
-			/* Allow scaling to be controlled by the fit function instead */
-			zoom: 100% !important;
-		}
-
-	}
-
 </style>

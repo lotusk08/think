@@ -56,6 +56,6 @@ function createThemeStore() {
 export const theme = createThemeStore();
 export const show = writable(false);
 export const markdownSource = writable(initialDemoContent);
-// One-shot requests from the menu, handled (and reset) by Mindmap.svelte
-export const mindmapSaveAsSvg = writable(false);
-export const mindmapSaveAsHtml = writable(false);
+// One-shot file export requested from the menu ("svg" or "html"), handled
+// (and reset) by Mindmap.svelte. PDF goes through the browser's print dialog.
+export const exportRequest = writable(null);

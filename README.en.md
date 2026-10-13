@@ -26,7 +26,7 @@ Using Markdown to create mind maps offers several advantages:
   - For sub-levels, add two spaces before the dash
 
 ### Saving and Sharing
-- Save as SVG or HTML format, or create a sharing link
+- Export as PDF, SVG or interactive HTML, or copy a sharing link
 - Possibility to share a mind map from a Markdown file on [CodiMD](codimd.apps.education.fr) or another service, by putting your file's URL in the `hash`: `https://mymarkmap.forge.apps.education.fr/#URL_OF_MARKDOWN_FILE`
 
 ### Map Navigation
