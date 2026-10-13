@@ -3,8 +3,7 @@
     import { browser } from "$app/env";
     import { fade, fly } from "svelte/transition";
     import { quintOut } from "svelte/easing";
-    import { show, exportRequest, markdownSource, theme } from "./stores.js";
-    import { initialDemoContent, defaultTemplate } from "./content.js";
+    import { show, exportRequest, markdownSource, theme, notification, notify } from "./stores.js";
 
     export let showMenu;
     export let disableWarningMessage;
@@ -16,17 +15,8 @@
         showMenu = false;
     }
 
-    let showNotification = false;
-    let notificationMessage = "";
-
-    function toastNotification(message) {
-        notificationMessage = message;
-        showNotification = true;
-        setTimeout(() => (showNotification = false), 2000);
-    }
-
     function menuEdit() {
-        showNotification = false;
+        notification.set("");
         show.set(true);
     }
 
@@ -35,37 +25,8 @@
     }
 
     function menuShare() {
-        toastNotification("Link copied!");
+        notify("Link copied!");
         navigator.clipboard.writeText(location.origin + location.pathname + "#" + encodeURI($markdownSource));
-    }
-
-    function menuReset() {
-        // Only ask before throwing away something the user actually wrote:
-        // the demo map and the blank template are not worth confirming.
-        const isUntouched =
-            $markdownSource === initialDemoContent ||
-            $markdownSource === defaultTemplate;
-
-        if (!isUntouched && !confirm("This will clear your current data. Sure?")) {
-            return;
-        }
-
-        // The theme is the only thing worth keeping across a reset
-        const savedTheme = localStorage.getItem("theme");
-        localStorage.clear();
-        if (savedTheme) {
-            localStorage.setItem("theme", savedTheme);
-        }
-
-        sessionStorage.clear();
-
-        if (window.caches) {
-            caches.keys().then((names) => names.forEach((name) => caches.delete(name)));
-        }
-
-        markdownSource.set(defaultTemplate);
-
-        toastNotification("Data cleared!");
     }
 
     // The Export menu and its keyboard shortcuts
@@ -159,7 +120,7 @@
         class="menu-container"
         in:fly={{ y: 20, duration: 400, easing: quintOut }}
     >
-        <nav id="menu" class:edit-mode={$show}>
+        <nav id="menu">
             <div class="menu-items">
                 {#if $show}
                     <button on:click|preventDefault={menuView} class="menu-btn" aria-label="Show only the mind map" title="Show only the mind map (Escape)">
@@ -215,29 +176,15 @@
                     {/if}
                 </button>
             </div>
-
-            <div class="eraser-container">
-                {#if $show}
-                    <button
-                        on:click|preventDefault={menuReset}
-                        transition:fade={{ duration: 200 }}
-                        class="menu-btn"
-                        aria-label="Clear mind map and browser cache"
-                        title="Clear mind map and browser cache"
-                    >
-                        <i class="fas fa-eraser" style="color: #d360d4;"></i>
-                    </button>
-                {/if}
-            </div>
         </nav>
 
-        {#if showNotification}
+        {#if $notification}
             <div
                 id="shareNotification"
                 in:fly={{ y: 5, duration: 1000}}
                 out:fade
             >
-                {notificationMessage}
+                {$notification}
             </div>
         {/if}
     </div>
@@ -270,20 +217,6 @@
         display: flex;
         gap: 0.75rem;
         align-items: center;
-    }
-
-    .eraser-container {
-        display: flex;
-        justify-content: center;
-    }
-    
-    .eraser-container i {
-        display: flex;
-        justify-content: center;
-    }
-
-    .edit-mode {
-        transition: width 0.2s ease-in-out;
     }
 
     #menu:hover {

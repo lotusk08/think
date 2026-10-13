@@ -10,8 +10,9 @@
 <script>
     import { onMount, tick } from 'svelte';
     import { get } from 'svelte/store';
-    import { show, markdownSource } from './stores.js';
+    import { show, markdownSource, notify } from './stores.js';
     import { OPTION_KEYS } from './options.js';
+    import { initialDemoContent, defaultTemplate } from './content.js';
 
     const yamlProperty = new RegExp(`(${OPTION_KEYS.join('|')}):`, 'g');
 
@@ -71,6 +72,31 @@
         };
     });
 
+    function clearAll() {
+        // Only ask before throwing away something the user actually wrote:
+        // the demo map and the blank template are not worth confirming.
+        const code = get(markdownSource);
+        const isUntouched = code === initialDemoContent || code === defaultTemplate;
+        if (!isUntouched && !confirm("This will clear your current data. Sure?")) {
+            return;
+        }
+
+        // The theme is the only thing worth keeping across a reset
+        const savedTheme = localStorage.getItem("theme");
+        localStorage.clear();
+        if (savedTheme) {
+            localStorage.setItem("theme", savedTheme);
+        }
+        sessionStorage.clear();
+        if (window.caches) {
+            caches.keys().then((names) => names.forEach((name) => caches.delete(name)));
+        }
+
+        markdownSource.set(defaultTemplate);
+        notify("Data cleared!");
+        editor.focus();
+    }
+
     $: if ($show && editor) {
         tick().then(() => editor.focus());
     }
@@ -116,32 +142,75 @@
     }
 </script>
 
-<div
-    bind:this={editor}
-    contenteditable="true"
-    spellcheck="false"
-    class:hidden={!$show}
-    class="editor">
+<div class="editor-panel" class:hidden={!$show}>
+    <div
+        bind:this={editor}
+        contenteditable="true"
+        spellcheck="false"
+        class="editor">
+    </div>
+    <button
+        class="clear"
+        on:click={clearAll}
+        aria-label="Clear mind map and browser cache"
+        title="Clear mind map and browser cache"
+    >
+        <i class="fas fa-eraser"></i>
+    </button>
 </div>
 
 <style>
-    .editor {
+    /* Shrink-wraps the editor, so the eraser follows it when it is resized */
+    .editor-panel {
         font-size: 14px;
         bottom: 4.25em;
         left: 1.75em;
-        width: 40%;
-        height: 30vh;
         position: absolute;
         z-index: 1;
+    }
+
+    .editor {
+        width: 40vw;
+        height: 30vh;
         backdrop-filter: blur(5px);
         background-color: var(--editor-bg);
     }
+
     @media screen and (max-width:768px) {
-        .editor {
-            width: 85%;
-            height: 35vh;
+        .editor-panel {
             bottom: 3em;
         }
+        .editor {
+            width: 85vw;
+            height: 35vh;
+        }
+    }
+
+    .clear {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 2em;
+        height: 2em;
+        border: none;
+        border-radius: 4px;
+        background-color: transparent;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .clear i {
+        color: #d360d4;
+        font-size: 0.85rem;
+    }
+
+    .clear:hover,
+    .clear:focus-visible {
+        outline: none;
+        background-color: rgba(127, 127, 127, 0.12);
     }
 
     /* display:none rather than visibility:hidden: Safari paints the resize grip
@@ -152,7 +221,7 @@
     }
 
     @media print {
-        .editor {
+        .editor-panel {
             display: none;
         }
     }

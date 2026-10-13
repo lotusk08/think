@@ -59,3 +59,12 @@ export const markdownSource = writable(initialDemoContent);
 // One-shot file export requested from the menu ("svg" or "html"), handled
 // (and reset) by Mindmap.svelte. PDF goes through the browser's print dialog.
 export const exportRequest = writable(null);
+
+// Short message shown above the menu ("Link copied!")
+export const notification = writable("");
+let notificationTimer;
+export function notify(message) {
+  clearTimeout(notificationTimer);
+  notification.set(message);
+  notificationTimer = setTimeout(() => notification.set(""), 2000);
+}
