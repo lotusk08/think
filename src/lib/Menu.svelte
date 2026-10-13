@@ -71,7 +71,7 @@
     // The Export menu and its keyboard shortcuts
     const exportItems = [
         { key: "p", icon: "fa-file-pdf", label: "PDF", hint: "Print-ready vector file: pick “Save as PDF” in the print dialog", run: () => window.print() },
-        { key: "s", icon: "fa-file-image", label: "SVG image", hint: "Static vector image", run: () => exportRequest.set("svg") },
+        { key: "s", icon: "fa-file-image", label: "SVG", hint: "Static vector image", run: () => exportRequest.set("svg") },
         { key: "h", icon: "fa-file-code", label: "HTML", hint: "Interactive web page", run: () => exportRequest.set("html") },
         { key: "l", icon: "fa-link", label: "Copy link", hint: "Link that opens this map", run: menuShare }
     ];
