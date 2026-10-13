@@ -7,12 +7,10 @@
     export let showMenu;
     export let disableWarningMessage;
 
-    // ?m=0 in the URL hides the menu
+    // ?m=0 in the URL hides the menu; the "m" key overrides it and the header
     const hiddenByURL = browser && new URLSearchParams(location.search).get("m") === "0";
-    const disableMenu = !showMenu;
-    if (hiddenByURL) {
-        showMenu = false;
-    }
+    let visibilityOverride;
+    $: visible = visibilityOverride ?? (showMenu && !hiddenByURL);
 
     function menuEdit() {
         notification.set("");
@@ -77,7 +75,7 @@
 
     const shortcuts = {
         e: menuEdit,
-        m: () => (showMenu = !showMenu),
+        m: () => (visibilityOverride = !visible),
         t: theme.toggle,
         ...Object.fromEntries(exportItems.map((item) => [item.key, item.run]))
     };
@@ -104,7 +102,7 @@
     function beforeunload(event) {
         // No confirmation prompt when disableWarningMessage is true in the YAML,
         // when showMenu is false, or when the URL carries m=0
-        if (disableWarningMessage === true || disableMenu || hiddenByURL) {
+        if (disableWarningMessage === true || !showMenu || hiddenByURL) {
             return;
         }
 
@@ -114,7 +112,7 @@
 </script>
 
 <svelte:window on:keydown={handleKeydown} on:click={handleWindowClick} on:beforeunload={beforeunload} />
-{#if showMenu}
+{#if visible}
     <div class="menu-container">
         <nav id="menu" transition:slideFade={{ y: 20, duration: 300 }}>
             <div class="menu-items">

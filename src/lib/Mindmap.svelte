@@ -23,7 +23,7 @@
 	export let focusOnBranch;
 	export let automaticResize;
 
-	const { Markmap, loadCSS, loadJS, deriveOptions } = markmap;
+	const { Markmap, loadCSS, loadJS, deriveOptions, defaultOptions } = markmap;
 	$: mapTitle = String(title || 'Mindmap');
 	// Names the exported files and the PDF
 	$: fileName = toFileName(mapTitle);
@@ -39,10 +39,11 @@
 	const isMobile = typeof navigator !== 'undefined' &&
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 	const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
-	// On mobile, resizing starts off: a double tap turns it on
-	if (isMobile) {
-		automaticResize = false;
-	}
+	// The `r` key and the mobile double tap override the header's automaticResize
+	// (kept apart from the prop, which the page re-sends on every edit); on
+	// mobile it starts off
+	let resizeOverride = isMobile ? false : undefined;
+	const autoResize = () => resizeOverride ?? automaticResize;
 
 	let mindmap; // the <svg>
 	let mm; // the Markmap instance
@@ -52,7 +53,10 @@
 	let mindmapRoot;
 	let renderId = 0;
 	let retransformQueued = false;
+	let assetsFailed = false;
 	let lastTapTime = 0;
+	let fitTimer;
+	let palette; // branch colors of the current theme, read once per theme
 
 	const IMAGE_HEIGHTS = [25, 50, 75, 100, 125, 150, 175, 200];
 
@@ -127,6 +131,11 @@
 			.filter(Boolean);
 	}
 
+	function currentPalette() {
+		palette ??= branchColors();
+		return palette;
+	}
+
 	function markmapOptions() {
 		const options = {
 			maxWidth,
@@ -136,17 +145,15 @@
 			initialExpandLevel,
 			paddingY: 20
 		};
+		// setData merges options, so markmap's own palette (colorFreezeLevel 0)
+		// has to be set back explicitly after a themed one
 		return colorFreezeLevel > 0
-			? { ...options, ...deriveOptions({ color: branchColors(), colorFreezeLevel }) }
-			: options;
+			? { ...options, ...deriveOptions({ color: currentPalette(), colorFreezeLevel }) }
+			: { ...options, color: defaultOptions.color };
 	}
 
 	function createTransformer() {
 		const created = new Transformer();
-		const { rules } = created.md.renderer;
-		// markmap sends $…$ and block $$…$$ to its on-demand KaTeX, but leaves inline
-		// $$…$$ to the bundled one, which is stubbed out (see vite.config.js)
-		rules.math_inline_block = rules.math_block;
 		// KaTeX and highlight.js come from a CDN on first use: render again once
 		// they are in (one call per pending formula, so coalesce them)
 		created.hooks.retransform.tap(() => {
@@ -167,8 +174,14 @@
 
 		const { root, features } = transformer.transform(source);
 		const { styles, scripts } = transformer.getUsedAssets(features);
-		await loadCSS(styles);
-		await loadJS(scripts, { getMarkmap: () => markmap });
+		try {
+			await loadCSS(styles);
+			await loadJS(scripts, { getMarkmap: () => markmap });
+		} catch (error) {
+			// Offline or CDN blocked: render without KaTeX / highlight.js
+			if (!assetsFailed) console.warn('Could not load map assets:', error);
+			assetsFailed = true;
+		}
 		// A newer render started while the assets loaded
 		if (id !== renderId || !mindmap) return;
 
@@ -187,12 +200,12 @@
 		}
 
 		const created = !mm;
-		mm ??= new Markmap(mindmap, markmapOptions());
+		mm ??= new Markmap(mindmap);
 		await instantly(async () => {
 			// setData is async: fit only once the new layout has been rendered,
 			// otherwise the zoom transform is computed from a stale/empty rect
 			await mm.setData(root, markmapOptions());
-			if (created || automaticResize) mm.fit();
+			if (created || autoResize()) mm.fit();
 		});
 	}
 
@@ -211,6 +224,7 @@
 
 	// Branch colors come from the theme: recolor (without refitting) when it changes
 	const unsubscribeTheme = theme.subscribe(() => {
+		palette = undefined;
 		if (mm && colorFreezeLevel > 0) instantly(() => mm.setData(null, markmapOptions()));
 	});
 
@@ -237,18 +251,20 @@
 
 	onDestroy(() => {
 		unsubscribeTheme();
+		clearTimeout(fitTimer);
 		straightener?.disconnect();
 		mm?.destroy();
 	});
 
+	// Refits after clicks, the `r` toggle and window resizes (debounced)
 	function fitSoon() {
-		if (automaticResize) {
-			setTimeout(() => mm.fit(), 50);
-		}
+		if (!autoResize() || !mm) return;
+		clearTimeout(fitTimer);
+		fitTimer = setTimeout(() => mm.fit(), 50);
 	}
 
 	function toggleAutomaticResize() {
-		automaticResize = !automaticResize;
+		resizeOverride = !autoResize();
 		fitSoon();
 	}
 
@@ -322,20 +338,26 @@
 		return JSON.stringify(value).replace(/</g, '\\u003c');
 	}
 
+	// Serialized as XML (not innerHTML) so the file is well-formed: void
+	// elements closed, &nbsp; written as a character, xmlns on the HTML parts
 	function createSVG() {
+		const SVG_NS = 'http://www.w3.org/2000/svg';
 		const { x, y, width, height } = mindmap.getBBox();
-		const content = mindmap.innerHTML
-			.replace(/<br>/g, '<br/>')
-			.replace(/\n/g, ' ')
-			.replace(/<title>.*<\/title>/, '')
-			// Without xmlns on the divs, the text is not visible in the saved SVG
-			.replaceAll('<div>', '<div xmlns="http://www.w3.org/1999/xhtml">');
+		const svg = mindmap.cloneNode(true);
+		svg.querySelector(':scope > title')?.remove();
+		svg.setAttribute('style', 'width:100%; height:100%;');
+		svg.setAttribute('viewBox', `${x - 20} ${y - 20} ${width + 40} ${height + 40}`);
+
+		const use = document.createElementNS(SVG_NS, 'use');
+		use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '');
+		use.append(document.createElementNS(SVG_NS, 'title'));
+		use.firstChild.textContent = mapTitle;
+		const desc = document.createElementNS(SVG_NS, 'desc');
+		desc.textContent = $markdownSource;
+		svg.prepend(use, desc);
+
 		return '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">' +
-			`<svg id="markmap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="${mindmap.className.baseVal}" style="width:100%; height:100%;" viewBox="${x - 20} ${y - 20} ${width + 40} ${height + 40}">` +
-			`<use xlink:href=""><title>${escapeHtml(mapTitle)}</title></use>` +
-			`<desc>${escapeHtml($markdownSource)}</desc>` +
-			content +
-			'</svg>';
+			new XMLSerializer().serializeToString(svg);
 	}
 
 	function createHTML() {
@@ -405,7 +427,7 @@
 		};
 		const colorFreezeLevel = ${toScriptJSON(colorFreezeLevel)};
 		const colorOptions = colorFreezeLevel > 0
-			? deriveOptions({ color: ${toScriptJSON(branchColors())}, colorFreezeLevel })
+			? deriveOptions({ color: ${toScriptJSON(currentPalette())}, colorFreezeLevel })
 			: {};
 		Markmap.create("#markmap", { ...options, ...colorOptions }, ${toScriptJSON(mindmapRoot)});
 	<\/script>
@@ -423,8 +445,9 @@
 	};
 
 	$: if ($exportRequest) {
-		fileExports[$exportRequest]();
+		const kind = $exportRequest;
 		exportRequest.set(null);
+		if (mm) fileExports[kind]();
 	}
 
 	// Print / Save as PDF (from the menu or Cmd/Ctrl+P): fit the whole map on one
@@ -440,7 +463,7 @@
 		const pageStyle = document.createElement('style');
 		pageStyle.textContent = `@page { size: ${width >= height ? 'landscape' : 'portrait'}; margin: 10mm; }`;
 		document.head.append(pageStyle);
-		printState = { transform: group.getAttribute('transform'), documentTitle: document.title, pageStyle };
+		printState = { transform: group.getAttribute('transform'), documentTitle: document.title, pageStyle, swaps: swapToLightPalette() };
 
 		group.removeAttribute('transform');
 		mindmap.setAttribute('viewBox', `${x - margin} ${y - margin} ${width + 2 * margin} ${height + 2 * margin}`);
@@ -448,9 +471,42 @@
 		document.title = fileName;
 	}
 
+	// Paper is white: in dark mode, swap the branch colors markmap baked into
+	// stroke/fill attributes for the light palette (same order). Done in place,
+	// since a re-render would land after the page is printed.
+	function swapToLightPalette() {
+		const swaps = [];
+		if ($theme !== 'dark' || !(colorFreezeLevel > 0)) return swaps;
+		const root = document.documentElement;
+		root.setAttribute('data-theme', 'light');
+		const light = branchColors();
+		root.setAttribute('data-theme', 'dark');
+		// Attributes hold "#hex" or, once a transition ran, "rgb(…)": compare the
+		// canvas-normalized forms
+		const context = document.createElement('canvas').getContext('2d');
+		const normalize = (color) => {
+			context.fillStyle = '#000';
+			context.fillStyle = color;
+			return context.fillStyle;
+		};
+		const toLight = new Map(currentPalette().map((color, i) => [normalize(color), light[i]]));
+		for (const element of mindmap.querySelectorAll('[stroke], [fill]')) {
+			for (const attribute of ['stroke', 'fill']) {
+				const color = element.getAttribute(attribute);
+				const lightColor = toLight.get(normalize(color));
+				if (lightColor) {
+					swaps.push([element, attribute, color]);
+					element.setAttribute(attribute, lightColor);
+				}
+			}
+		}
+		return swaps;
+	}
+
 	function handleAfterPrint() {
 		if (!printState) return;
-		const { transform, documentTitle, pageStyle } = printState;
+		const { transform, documentTitle, pageStyle, swaps } = printState;
+		for (const [element, attribute, color] of swaps) element.setAttribute(attribute, color);
 		if (transform) mm.g.node().setAttribute('transform', transform);
 		mindmap.removeAttribute('viewBox');
 		document.title = documentTitle;
@@ -459,7 +515,7 @@
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:beforeprint={handleBeforePrint} on:afterprint={handleAfterPrint} />
+<svelte:window on:keydown={handleKeydown} on:resize={fitSoon} on:beforeprint={handleBeforePrint} on:afterprint={handleAfterPrint} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <svg id="markmap" bind:this={mindmap} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"

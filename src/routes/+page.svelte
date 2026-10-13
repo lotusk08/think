@@ -26,8 +26,9 @@
 			mindmapFromURL = true;
 		} else if (hash) {
 			markdownSource.set(decodeURI(hash));
-			// The map now lives in the editor: drop it from the address bar
-			goto(location.pathname + location.search, { shallow: true });
+			// The map now lives in the editor: drop it from the address bar (left as
+			// is if the router doesn't know the path, e.g. /index.html)
+			goto(location.pathname + location.search, { shallow: true, replace: true }).catch(() => {});
 			mindmapFromURL = true;
 		}
 	});

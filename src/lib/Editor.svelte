@@ -10,7 +10,7 @@
 <script>
     import { onMount, tick } from 'svelte';
     import { get } from 'svelte/store';
-    import { show, markdownSource, notify } from './stores.js';
+    import { show, markdownSource, notify, clearSavedData } from './stores.js';
     import { OPTION_KEYS } from './options.js';
     import { initialDemoContent, defaultTemplate } from './content.js';
 
@@ -18,7 +18,7 @@
 
     let editor;
     let jar;
-    let turndownService;
+    let turndownReady;
 
     const highlight = editor => {
         // Keep the underscores of :emoji_codes: from being highlighted as emphasis
@@ -81,17 +81,7 @@
             return;
         }
 
-        // The theme is the only thing worth keeping across a reset
-        const savedTheme = localStorage.getItem("theme");
-        localStorage.clear();
-        if (savedTheme) {
-            localStorage.setItem("theme", savedTheme);
-        }
-        sessionStorage.clear();
-        if (window.caches) {
-            caches.keys().then((names) => names.forEach((name) => caches.delete(name)));
-        }
-
+        clearSavedData();
         markdownSource.set(defaultTemplate);
         notify("Data cleared!");
         editor.focus();
@@ -99,6 +89,17 @@
 
     $: if ($show && editor) {
         tick().then(() => editor.focus());
+    }
+
+    function loadTurndown() {
+        turndownReady ??= import('turndown').then(({ default: Turndown }) => new Turndown({
+            headingStyle: 'atx',
+            hr: '---',
+            bulletListMarker: '-',
+            codeBlockStyle: 'fenced',
+            emDelimiter: '*'
+        }));
+        return turndownReady;
     }
 
     // Firefox (>= 136 in particular) can expose an HTML-only clipboard: convert it to
@@ -110,24 +111,23 @@
         }
 
         event.preventDefault();
+        // Clipboard data is only readable during the event
         const html = event.clipboardData.getData('text/html');
-        const pos = jar.save();
-
-        if (!turndownService) {
-            const { default: Turndown } = await import('turndown');
-            turndownService = new Turndown({
-                headingStyle: 'atx',
-                hr: '---',
-                bulletListMarker: '-',
-                codeBlockStyle: 'fenced',
-                emDelimiter: '*'
-            });
+        let pastedText;
+        try {
+            pastedText = (await loadTurndown()).turndown(html);
+        } catch {
+            // The converter could not load (e.g. offline): paste the plain text
+            turndownReady = undefined;
+            pastedText = new DOMParser().parseFromString(html, 'text/html').body.textContent;
         }
-        const pastedText = turndownService.turndown(html).replace(/\r\n?/g, '\n');
+        pastedText = pastedText.replace(/\r\n?/g, '\n');
         if (!pastedText) {
             return;
         }
 
+        // Read the caret only now, so back-to-back pastes land one after the other
+        const pos = jar.save();
         const start = Math.min(pos.start, pos.end);
         const end = Math.max(pos.start, pos.end);
         const code = jar.toString();

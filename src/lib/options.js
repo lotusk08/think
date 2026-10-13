@@ -1,4 +1,4 @@
-import { load as parse } from "js-yaml";
+import { parse } from "./yaml-shim.js";
 
 const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", Inter, Ubuntu, "Liberation Sans", sans-serif, "Source Code Pro", "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace';
 
@@ -33,8 +33,9 @@ export const OPTION_KEYS = [...Object.keys(DEFAULTS), "theme", "maxWidth", "mw",
 // the previous options instead of flickering through the defaults.
 function readFrontMatter(markdown) {
 	if (!/^---\r?\n/.test(markdown)) return undefined;
-	const end = /\n---\r?\n/.exec(markdown);
-	if (!end) return undefined;
+	// An opened header that is not closed yet is still being typed
+	const end = /\n---(?:\r?\n|$)/.exec(markdown);
+	if (!end) return null;
 	try {
 		const data = parse(markdown.slice(4, end.index));
 		return data && typeof data === "object" && !Array.isArray(data) ? data : {};

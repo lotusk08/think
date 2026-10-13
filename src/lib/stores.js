@@ -19,6 +19,19 @@ function saveTheme(value) {
   } catch {}
 }
 
+// Clears what the app keeps in the browser, except the chosen theme
+export function clearSavedData() {
+  const savedTheme = readSavedTheme();
+  try {
+    localStorage.clear();
+    sessionStorage.clear();
+  } catch {}
+  if (savedTheme) saveTheme(savedTheme);
+  if (typeof caches !== "undefined") {
+    caches.keys().then((names) => names.forEach((name) => caches.delete(name)), () => {});
+  }
+}
+
 // app.html sets data-theme before first paint; this store owns it afterwards.
 // A theme picked with the toggle is remembered; until then, follow the system.
 function createThemeStore() {
