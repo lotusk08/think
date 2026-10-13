@@ -197,7 +197,6 @@
                                 <button role="menuitem" class="export-item" title={item.hint} on:click={() => runExport(item)}>
                                     <i class="fas {item.icon}"></i>
                                     <span>{item.label}</span>
-                                    <kbd>{item.key}</kbd>
                                 </button>
                             {/each}
                         </div>
@@ -357,15 +356,6 @@
         width: 1rem;
         color: var(--icon-color);
         text-align: center;
-    }
-
-    .export-item span {
-        flex: 1;
-    }
-
-    .export-item kbd {
-        font: inherit;
-        color: var(--icon-color);
     }
 
     .export-item:hover,
