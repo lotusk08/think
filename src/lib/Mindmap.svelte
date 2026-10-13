@@ -24,8 +24,18 @@
 	export let automaticResize;
 
 	const { Markmap, loadCSS, loadJS, deriveOptions } = markmap;
-	// Names the SVG/HTML exports and the PDF
 	$: mapTitle = String(title || 'Mindmap');
+	// Names the exported files and the PDF
+	$: fileName = toFileName(mapTitle);
+
+	// Characters filesystems reject become spaces; capped at 100 characters
+	function toFileName(text) {
+		const name = text
+			.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ')
+			.replace(/\s+/g, ' ')
+			.replace(/^[\s.]+|[\s.]+$/g, '');
+		return [...name].slice(0, 100).join('').trim() || 'Mindmap';
+	}
 	const isMobile = typeof navigator !== 'undefined' &&
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 	const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
@@ -408,8 +418,8 @@
 	}
 
 	const fileExports = {
-		svg: () => saveFile(createSVG(), 'mindmap.svg'),
-		html: () => saveFile(createHTML(), 'mindmap.html')
+		svg: () => saveFile(createSVG(), `${fileName}.svg`),
+		html: () => saveFile(createHTML(), `${fileName}.html`)
 	};
 
 	$: if ($exportRequest) {
@@ -435,7 +445,7 @@
 		group.removeAttribute('transform');
 		mindmap.setAttribute('viewBox', `${x - margin} ${y - margin} ${width + 2 * margin} ${height + 2 * margin}`);
 		// Browsers name the PDF after the page title
-		document.title = mapTitle;
+		document.title = fileName;
 	}
 
 	function handleAfterPrint() {
