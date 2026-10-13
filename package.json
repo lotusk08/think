@@ -1,6 +1,6 @@
 {
   "name": "Think tree",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -8,23 +8,22 @@
     "deploy": "npm run build && touch build/.nojekyll && gh-pages -d build -t true"
   },
   "devDependencies": {
-    "@sveltejs/adapter-auto": "^7.0.1",
-    "@sveltejs/kit": "^2.70.2",
-    "@sveltejs/vite-plugin-svelte": "^7.3.0",
-    "svelte": "^5.56.8",
-    "vite": "^8.2.1"
+    "@sveltejs/adapter-static": "^4.0.0",
+    "@sveltejs/kit": "^3.0.1",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "gh-pages": "^6.3.0",
+    "svelte": "^5.57.2",
+    "vite": "^8.3.4"
   },
   "type": "module",
   "dependencies": {
-    "@sveltejs/adapter-static": "^3.0.10",
     "codejar": "^4.3.0",
-    "gh-pages": "^6.3.0",
-    "highlight.js": "^11.11.2",
-    "js-yaml": "^5.2.3",
+    "emojilib": "^2.4.0",
+    "highlight.js": "^11.12.0",
+    "js-yaml": "^5.4.3",
     "markmap-common": "^0.18.9",
     "markmap-lib": "^0.18.12",
     "markmap-view": "^0.18.12",
-    "node-emoji": "^2.2.0",
     "turndown": "^7.2.4"
   }
 }

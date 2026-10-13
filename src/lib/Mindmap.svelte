@@ -1,23 +1,18 @@
 <script>
-	import {
-		afterUpdate,
-		onMount
-	} from 'svelte';
-	export let source;
-	import {
-		Transformer
-	} from 'markmap-lib';
+	import { onDestroy } from 'svelte';
+	import { Transformer } from 'markmap-lib';
 	import * as markmap from 'markmap-view';
-	import {deriveOptions} from 'markmap-view';
 	import { saveAs } from './saveAs.js';
+	import { escapeHtml } from './markdown.js';
 	import {
 		mindmapSaveAsSvg,
 		mindmapSaveAsHtml,
-		wValue,
-		hValue,
 		markdownSource,
-		show
+		show,
+		theme
 	} from './stores.js';
+
+	export let source;
 	export let maxWidth;
 	export let style;
 	export let title;
@@ -28,366 +23,316 @@
 	export let focusOnBranch;
 	export let automaticResize;
 
-	let mindmap;
-	let w;
-	let h;
-	let widthBlockquote;
-	let marginLeftBlockquote='';
-	let nodeTitle;
-	let description;
-	let isMobile = false;
-	let lastTapTime = 0;
-	let isMac = false;
-	$: description = $markdownSource;
-
-	const hackToForceKatexRenderingInHTMLtags = 'svg g[data-depth="1"] div > span br:nth-of-type(1), svg g[data-depth="2"] div > span br:nth-of-type(1){display:none}';
-
-	onMount(() => {
-		isMobile =
-		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-			navigator.userAgent
-		);
-		automaticResize = isMobile ? false : true;
-		
-		// Detect Mac OS
-		isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-	})
-	let mm;
-
-	$: if (maxWidth<250) {
-		widthBlockquote = maxWidth;
-		marginLeftBlockquote='margin-left:-10px;';
-	} else {
-		widthBlockquote= 250;
-		marginLeftBlockquote='';
+	const { Markmap, loadCSS, loadJS, deriveOptions } = markmap;
+	const isMobile = typeof navigator !== 'undefined' &&
+		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+	const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
+	// On mobile, resizing starts off: a double tap turns it on
+	if (isMobile) {
+		automaticResize = false;
 	}
+
+	let mindmap; // the <svg>
+	let mm; // the Markmap instance
+	let transformer;
+	let titleElement;
+	let styleElement;
 	let mindmapRoot;
+	let renderId = 0;
+	let retransformQueued = false;
+	let lastTapTime = 0;
 
-	$: wValue.update(n => w)
-	$: hValue.update(n => h)
+	const IMAGE_HEIGHTS = [25, 50, 75, 100, 125, 150, 175, 200];
 
-	// Debounce function to handle map updates with a delay
-	// Function used to change lines to curves after display
-	// and to avoid flickering with each keypress
-	function debounce(func, wait) {
-		let timeout;
-		return function(...args) {
-			const later = () => {
-				clearTimeout(timeout);
-				func(...args);
-			};
-			clearTimeout(timeout);
-			timeout = setTimeout(later, wait);
-		};
-	}
-
-	function curvesToLines() {
-		if(mindmap && !curves) {
-			const paths = mindmap.querySelectorAll('path');
-			paths.forEach(path => {
-				const d = path.getAttribute('d');
-				if (d && d.includes('C')) {
-					const newD = d.replace('C','L')
-					path.setAttribute('d', newD);
-				}
-			});
+	// markmap ships its own light-only palette on .markmap: remap it onto the
+	// app theme so text stays readable in dark mode
+	const MARKMAP_PALETTE = `
+		svg#markmap {
+			--markmap-text-color: var(--text-color);
+			--markmap-code-bg: var(--mindmap-code-bg);
+			--markmap-code-color: var(--mindmap-code-color);
+			--markmap-circle-open-bg: var(--bg-color);
+			--markmap-table-border: 1px solid var(--border-color);
 		}
+		.markmap-foreign code {
+			color: var(--mindmap-code-color) !important;
+			background-color: var(--mindmap-code-bg) !important;
+		}`;
+
+	// Node content styles shared by the live map and the HTML export,
+	// with every selector prefixed by `scope`
+	function contentCSS(scope) {
+		const narrow = maxWidth < 250;
+		return `
+			${scope}a {text-decoration:none}
+			${scope}foreignObject {overflow:visible}
+			${scope}.hide, ${scope}.hide * {color:var(--text-color)!important; opacity:0.2}
+			${scope}.hide {background-color:var(--mindmap-hide-bg); border-radius:1px; transition:opacity 0.2s ease}
+			${scope}.hide:hover {opacity:0.8}
+			${scope}.hide img {opacity:0}
+			${IMAGE_HEIGHTS.map((h) => `${scope}img[alt=h-${h}]{height:${h}px}`).join('\n')}
+			${scope}blockquote {
+				width:${narrow ? maxWidth : 250}px!important;
+				white-space:normal;
+				text-align:justify;
+				font-size:0.8em;
+				line-height:1em;
+				border:1px solid var(--mindmap-blockquote-border);
+				padding:10px;
+				border-radius:4px;
+				${narrow ? 'margin-left:-10px;' : ''}
+			}
+			${scope}cite {font-style:inherit; font-family:serif; font-size:0.97em}
+			${scope}code, .markmap-foreign code {
+				color:var(--mindmap-code-color);
+				background-color:var(--mindmap-code-bg);
+				border-radius:var(--code-border-radius);
+				padding:var(--code-padding);
+				font-size:var(--code-font-size);
+			}
+			.markmap-foreign>div {
+				width:max-content!important;
+				max-width:var(--markmap-max-width)!important;
+			}
+			/* Forces KaTeX rendering in HTML tags */
+			${scope}g[data-depth="1"] div > span br:nth-of-type(1), ${scope}g[data-depth="2"] div > span br:nth-of-type(1){display:none}
+		`;
 	}
-	const debouncedCurvesToLines = debounce(curvesToLines, 500);
 
-	function setLinksToOpenInNewTab() {
-		const links = mindmap.querySelectorAll('a');
-		links.forEach(link => {
-			link.setAttribute('target', '_blank');
-		});
+	function liveCSS() {
+		return MARKMAP_PALETTE + `
+			svg div{margin-top:-2px;}
+			svg strong{font-size:0.95em; font-weight:600;}
+			svg aside{font-size:0.8em; display:inline-block; font-weight:normal; vertical-align:top}
+		` + contentCSS('svg ') + style;
 	}
 
-	afterUpdate(async () => {
-		const transformer = new Transformer();
+	function branchColors() {
+		return getComputedStyle(document.documentElement)
+			.getPropertyValue('--mindmap-branch-colors')
+			.split(',')
+			.map((c) => c.trim())
+			.filter(Boolean);
+	}
 
-		const {
-			root,
-			features
-		} = transformer.transform(source);
-		const {
-			styles,
-			scripts
-		} = transformer.getUsedAssets(features);
-		const {
-			Markmap,
-			loadCSS,
-			loadJS
-		} = markmap;
-
-		if (styles) await loadCSS(styles);
-		if (scripts) await loadJS(scripts, {
-			getMarkmap: () => markmap
-		});
-
+	function markmapOptions() {
 		const options = {
 			duration: 0,
-			maxWidth: maxWidth,
+			maxWidth,
 			spacingVertical: 15,
 			paddingX: 20,
 			autoFit: false,
-			initialExpandLevel: initialExpandLevel,
-			paddingY: 20,
-		}
-		const optionsJSON = deriveOptions({
-			color: getComputedStyle(document.documentElement).getPropertyValue('--mindmap-branch-colors').split(',').map(c => c.trim()),
-			colorFreezeLevel: colorFreezeLevel,
-		})
-		const optionsFull = colorFreezeLevel > 0 ? {...options, ...optionsJSON} : options;
-		mindmapRoot = root;
-		const styleCSS = `
-			svg#markmap {
-				/* markmap ships its own light-only palette on .markmap:
-				   remap it onto the app theme so text stays readable in dark mode */
-				--markmap-text-color: var(--text-color);
-				--markmap-code-bg: var(--mindmap-code-bg);
-				--markmap-code-color: var(--mindmap-code-color);
-				--markmap-circle-open-bg: var(--bg-color);
-				--markmap-table-border: 1px solid var(--border-color);
-			}
-			svg div{margin-top:-2px;}
-			svg a {text-decoration:none} 
-			svg foreignObject {overflow:visible;} 
-			svg strong{
-				font-size:0.95em; 
-				font-weight:600;
-			} 
-			svg .hide, svg .hide *{
-				color:var(--text-color)!important;
-				opacity: 0.2;
-			} 
-			svg .hide {
-				background-color:var(--mindmap-hide-bg);
-				border-radius:1px;
-				transition: opacity 0.2s ease;
-			} 
-			svg .hide:hover {
-				opacity: 0.8;
-			} 
-			svg .hide img {opacity:0} 
-			svg img[alt=h-25]{height:25px} 
-			svg img[alt=h-50]{height:50px} 
-			svg img[alt=h-75]{height:75px} 
-			svg img[alt=h-100]{height:100px} 
-			svg img[alt=h-125]{height:125px} 
-			svg img[alt=h-150]{height:150px} 
-			svg img[alt=h-175]{height:175px} 
-			svg img[alt=h-200]{height:200px} 
-			svg blockquote {
-				width:${widthBlockquote}px!important; 
-				white-space: normal; 
-				text-align:justify; 
-				font-size:0.8em; 
-				line-height:1em; 
-				border:1px solid var(--mindmap-blockquote-border); 
-				padding:10px; 
-				border-radius:4px;
-				${marginLeftBlockquote}
-			} 
-			svg aside{
-				font-size: 0.8em;
-				display: inline-block;
-				font-weight:normal;
-				vertical-align: top
-			}
-			svg cite {
-				font-style:inherit;
-				font-family:serif;
-				font-size:0.97em
-			}
-			svg code, .markmap-foreign code {
-				color: var(--mindmap-code-color);
-				background-color: var(--mindmap-code-bg);
-				border-radius: var(--code-border-radius);
-				padding: var(--code-padding);
-				font-size: var(--code-font-size);
-			}
-			.markmap-foreign code {
-				color: var(--mindmap-code-color) !important;
-				background-color: var(--mindmap-code-bg) !important;
-			}
-			.markmap-foreign>div {
-				width: max-content!important;
-				max-width: var(--markmap-max-width)!important;
-			}
-		` + hackToForceKatexRenderingInHTMLtags + style;
+			initialExpandLevel,
+			paddingY: 20
+		};
+		return colorFreezeLevel > 0
+			? { ...options, ...deriveOptions({ color: branchColors(), colorFreezeLevel }) }
+			: options;
+	}
 
-		const styleElement = document.querySelector("#mindmap-style") || document.createElement("style")
+	function createTransformer() {
+		const created = new Transformer();
+		const { rules } = created.md.renderer;
+		// markmap sends $…$ and block $$…$$ to its on-demand KaTeX, but leaves inline
+		// $$…$$ to the bundled one, which is stubbed out (see vite.config.js)
+		rules.math_inline_block = rules.math_block;
+		// KaTeX and highlight.js come from a CDN on first use: render again once
+		// they are in (one call per pending formula, so coalesce them)
+		created.hooks.retransform.tap(() => {
+			if (retransformQueued) return;
+			retransformQueued = true;
+			queueMicrotask(() => {
+				retransformQueued = false;
+				render();
+			});
+		});
+		return created;
+	}
+
+	async function render() {
+		if (!mindmap) return;
+		const id = ++renderId;
+		transformer ??= createTransformer();
+
+		const { root, features } = transformer.transform(source);
+		const { styles, scripts } = transformer.getUsedAssets(features);
+		await loadCSS(styles);
+		await loadJS(scripts, { getMarkmap: () => markmap });
+		// A newer render started while the assets loaded
+		if (id !== renderId || !mindmap) return;
+
+		mindmapRoot = root;
+		if (!mm) {
+			titleElement = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+			styleElement = document.createElement('style');
+			styleElement.id = 'mindmap-style';
+			mindmap.append(titleElement, styleElement);
+		}
+		titleElement.textContent = title;
+		// Restyling the whole page on every keystroke is costly: only when it changed
+		const css = liveCSS();
+		if (styleElement.textContent !== css) {
+			styleElement.textContent = css;
+		}
 
 		if (mm) {
-			// The mindmap already exists: only refresh its data and styles
-			styleElement.innerHTML = styleCSS;
 			// setData is async: fit only once the new layout has been rendered,
 			// otherwise the zoom transform is computed from a stale/empty rect
-			mm.setData(root, optionsFull).then(() => {
-				if (automaticResize) {
-					mm.fit();
-				}
-			});
+			await mm.setData(root, markmapOptions());
+			if (automaticResize) mm.fit();
 		} else {
-			// Otherwise create it
-			nodeTitle = document.createElement("title")
-			nodeTitle.innerHTML = title;
-			mindmap.appendChild(nodeTitle);
-			styleElement.id = "mindmap-style";
-			mindmap.appendChild(styleElement);
-			styleElement.innerHTML = styleCSS;
-			// Markmap.create fits on its own once the initial data is rendered
-			mm = Markmap.create('#markmap', optionsFull, root);
+			mm = Markmap.create(mindmap, markmapOptions(), root);
 		}
+	}
 
+	$: if (mindmap) render(source, maxWidth, style, title, colorFreezeLevel, initialExpandLevel);
+
+	// Branch colors come from the theme: recolor (without refitting) when it changes
+	const unsubscribeTheme = theme.subscribe(() => {
+		if (mm && colorFreezeLevel > 0) mm.setData(null, markmapOptions());
+	});
+
+	// `curves: false`: markmap only draws curves, so straighten every link path it
+	// (re)draws: on data changes, folding, and when node contents get resized
+	const straightener = typeof MutationObserver === 'undefined' ? null : new MutationObserver((records) => {
+		for (const { target } of records) straighten(target);
+	});
+
+	function straighten(path) {
+		const d = path.getAttribute('d');
+		if (d && d.includes('C')) {
+			path.setAttribute('d', d.replace('C', 'L'));
+		}
+	}
+
+	$: if (mindmap && straightener) {
+		straightener.disconnect();
 		if (curves === false) {
-			debouncedCurvesToLines();
-			document.body.addEventListener("keyup", debouncedCurvesToLines);
+			mindmap.querySelectorAll('path').forEach(straighten);
+			straightener.observe(mindmap, { subtree: true, attributeFilter: ['d'] });
 		}
-
-		if(openLinksInNewTab) {
-			setLinksToOpenInNewTab()
-		}
-
-	})
-
-	function trimFromLastDot(str) {
-		const lastDotIndex = str.lastIndexOf('.');
-		return lastDotIndex !== -1 ? str.substring(0, lastDotIndex) : str;
 	}
 
-	function handleDoubleTap(event) {
-		// Check if we're on mobile and should process this as a double-tap
-		if (isMobile) {
-			const currentTime = new Date().getTime();
-			const tapLength = currentTime - lastTapTime;
-			
-			if (tapLength < 500 && tapLength > 0) {
-				// Double tap detected
-				event.preventDefault();
-				toggleAutomaticResize();
-				return true;
-			}
-			lastTapTime = currentTime;
-		}
-		return false;
-	}
+	onDestroy(() => {
+		unsubscribeTheme();
+		straightener?.disconnect();
+		mm?.destroy();
+	});
 
-	function toggleAutomaticResize() {
-		automaticResize = !automaticResize;
+	function fitSoon() {
 		if (automaticResize) {
 			setTimeout(() => mm.fit(), 50);
 		}
 	}
 
-	function handleHide(event) {
-		// First check for double tap on mobile
+	function toggleAutomaticResize() {
+		automaticResize = !automaticResize;
+		fitSoon();
+	}
+
+	function handleDoubleTap(event) {
+		if (!isMobile) return false;
+		const now = Date.now();
+		const tapLength = now - lastTapTime;
+		lastTapTime = now;
+		if (tapLength > 0 && tapLength < 500) {
+			event.preventDefault();
+			toggleAutomaticResize();
+			return true;
+		}
+		return false;
+	}
+
+	// Keeps only the clicked branch open among its siblings
+	function focusBranch(circle) {
+		const path = circle.parentElement.getAttribute('data-path');
+		const lastDot = path.lastIndexOf('.');
+		const parentPath = lastDot === -1 ? path : path.slice(0, lastDot);
+		const unfoldedBranches = mindmap.querySelectorAll(`g[data-path^="${parentPath}."]:not(.markmap-fold)`);
+		for (const branch of unfoldedBranches) {
+			branch.querySelector('circle')?.dispatchEvent(new MouseEvent('click'));
+		}
+		if ((!focusOnBranch || unfoldedBranches.length > 0) && path != '1') {
+			circle.dispatchEvent(new MouseEvent('click'));
+		}
+	}
+
+	function handleClick(event) {
 		if (handleDoubleTap(event)) {
 			return;
 		}
 
-		let targetElement = event.target
-		const elementType = targetElement.tagName
-		let searchDivCount = 0;
-		
-		// Check if Command key (Mac) or Alt key (Windows/Linux) is pressed
+		const { target } = event;
+		// Command key on Mac, Alt key on Windows/Linux
 		const modifierKeyPressed = isMac ? event.metaKey : event.altKey;
-		
-		if (elementType == 'SVG') {
-			return
+
+		// Set before the browser follows the link
+		if (openLinksInNewTab) {
+			target.closest('a')?.setAttribute('target', '_blank');
+		}
+
+		if (target.tagName === 'circle') {
+			if (modifierKeyPressed || focusOnBranch) {
+				focusBranch(target);
+			}
 		} else {
-			if(elementType =='circle') {
-				// Handle opening links in a new tab again if we're using this option in the yaml
-				if(openLinksInNewTab) {
-					setLinksToOpenInNewTab()
+			// Modifier+click hides the branch text, a plain click shows it again
+			const textElement = target.closest('div');
+			if (textElement && mindmap.contains(textElement)) {
+				if (modifierKeyPressed) {
+					textElement.classList.toggle('hide');
+				} else {
+					textElement.classList.remove('hide');
 				}
-				// Handle conversion to straight lines if needed
-				if (curves === false) {
-					debouncedCurvesToLines();
-				}
-			}
-			if (elementType =='circle' && (modifierKeyPressed || focusOnBranch)) {
-				const parentElement = targetElement.parentElement;
-				const dataPathParentElement = parentElement.getAttribute('data-path');
-				const sameLevelBranches = trimFromLastDot(dataPathParentElement)
-				const unfoldedBranches = mindmap.querySelectorAll('g[data-path^="'+sameLevelBranches+'."]:not(.markmap-fold)')
-				for (const branch of unfoldedBranches) {
-					const circle = branch.querySelector('circle');
-					if (circle) {
-						circle.dispatchEvent(new MouseEvent("click"));
-					}
-				}
-				if(!focusOnBranch || unfoldedBranches.length > 0) {
-					if(dataPathParentElement != "1") {
-						targetElement.dispatchEvent(new MouseEvent("click"));
-					}
-				}
-				if(automaticResize) {
-					setTimeout(() => mm.fit(), 50);
-				}
-				return
-			}
-			while (targetElement && targetElement.tagName !== 'DIV' && searchDivCount < 5) {
-				targetElement = targetElement.parentElement;
-				searchDivCount++;
 			}
 		}
-		if (targetElement.tagName == 'DIV') {
-			if (modifierKeyPressed) {
-				// Modified behavior: Toggle the hide class to show/hide the branch text
-				targetElement.classList.toggle('hide');
-			}
-			else {
-				targetElement.classList.remove('hide');
-			}
-		}
-		if(automaticResize) {
-			setTimeout(() => mm.fit(), 50);
+		fitSoon();
+	}
+
+	function handleKeydown(event) {
+		if (!$show && event.key === 'r' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+			toggleAutomaticResize();
 		}
 	}
 
-	function getBBox(element) {
-		const {x, y, width, height} = element.getBBox();
-		return {x: x - 20, y: y - 20, w: width + 40, h: height + 40};
+	// Data inside a <script> must not be able to close it
+	function toScriptJSON(value) {
+		return JSON.stringify(value).replace(/</g, '\\u003c');
 	}
 
-
-	function createSVG(mm) {
-		const boundingBox = getBBox(mindmap)
-		mm = mm.replace(/<br>/g, '<br/>')
-		mm = mm.replace(/\n/g, ' ')
-		mm = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg id="markmap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="' + mindmap.className['baseVal'] + '" style="width:100%; height:100%;" viewBox="' + boundingBox.x + ' ' + (boundingBox.y) + ' ' + (boundingBox.w) + ' ' + (boundingBox.h) + '">'+'<use xlink:href=""><title>'+title+'</title></use>'+'<desc>'+description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&lt;')+'</desc>'+ mm.replace(/<title>.*<\/title>/,'') + '</svg>'
-		// Sans l'attribut xmlns sur les div, le texte n'est plus visible dans le SVG enregistré
-		mm = mm.replaceAll("<div>","<div xmlns=\"http://www.w3.org/1999/xhtml\">")
-		return mm;
+	function createSVG() {
+		const { x, y, width, height } = mindmap.getBBox();
+		const content = mindmap.innerHTML
+			.replace(/<br>/g, '<br/>')
+			.replace(/\n/g, ' ')
+			.replace(/<title>.*<\/title>/, '')
+			// Without xmlns on the divs, the text is not visible in the saved SVG
+			.replaceAll('<div>', '<div xmlns="http://www.w3.org/1999/xhtml">');
+		return '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">' +
+			`<svg id="markmap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="${mindmap.className.baseVal}" style="width:100%; height:100%;" viewBox="${x - 20} ${y - 20} ${width + 40} ${height + 40}">` +
+			`<use xlink:href=""><title>${escapeHtml(String(title))}</title></use>` +
+			`<desc>${escapeHtml($markdownSource)}</desc>` +
+			content +
+			'</svg>';
 	}
 
-	function mindMapSaveAsSvgCreateFile() {
-		const file = new File([createSVG(mindmap.innerHTML)], "mindmap.svg", {
-			type: "text/plain;charset=utf-8"
-		});
-		saveAs(file);
-	}
-
-	function mindMapSaveAsHtmlCreateFile() {
-		const root = JSON.stringify(mindmapRoot);
-		const escapedDesc = description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&lt;');
-		const branchColors = JSON.stringify(
-			getComputedStyle(document.documentElement)
-				.getPropertyValue('--mindmap-branch-colors')
-				.split(',')
-				.map(c => c.trim())
-				.filter(Boolean)
-		);
-		// Le hack pour Katex s'applique ici en dehors d'un <svg> : on retire le préfixe "svg "
-		const katexHack = hackToForceKatexRenderingInHTMLtags.replaceAll('svg ', '');
-		let templateHtml = `<!DOCTYPE html>
+	function createHTML() {
+		const escapedTitle = escapeHtml(String(title));
+		const styles = `
+			div{padding-bottom:0.12em!important}
+			strong{color:var(--text-color); font-size:0.95em!important; font-weight:600!important;}
+			aside{font-size:0.8em; display:inline-block!important; font-weight:normal; vertical-align:top}
+			${contentCSS('')}
+			.katex-html{display:none}
+			${style}
+		`;
+		return `<!DOCTYPE html>
 <html>
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<title>${title}</title>
+	<title>${escapedTitle}</title>
 	<style>
 		:root {
 			--mindmap-code-bg: #f5f5f5;
@@ -396,6 +341,7 @@
 			--mindmap-hide-bg: rgba(200, 200, 200, 0.85);
 			--text-color: #494949;
 			--bg-color: #fcfcf9;
+			--border-color: #e0e0e0;
 			--code-padding: 0.25em;
 			--code-font-size: calc(1em - 2px);
 			--code-border-radius: 2px;
@@ -408,147 +354,65 @@
 				--mindmap-hide-bg: rgba(80, 80, 80, 0.85);
 				--text-color: #e7e7e7;
 				--bg-color: #1a1a1a;
+				--border-color: #404040;
 			}
-		}
-		[data-theme="dark"] {
-			--mindmap-code-bg: #2d2d2d;
-			--mindmap-code-color: #e0e0e0;
-			--mindmap-blockquote-border: #555;
-			--mindmap-hide-bg: rgba(80, 80, 80, 0.85);
-			--text-color: #e7e7e7;
-			--bg-color: #1a1a1a;
 		}
 		* { margin:0; padding:0 }
 		body { background-color: var(--bg-color); color: var(--text-color); }
 		#markmap { display:block; width:100vw; height:100vh }
-		svg#markmap {
-			/* markmap ships a light-only palette on .markmap: remap it onto the theme */
-			--markmap-text-color: var(--text-color);
-			--markmap-code-bg: var(--mindmap-code-bg);
-			--markmap-code-color: var(--mindmap-code-color);
-			--markmap-circle-open-bg: var(--bg-color);
-			--markmap-table-border: 1px solid var(--mindmap-blockquote-border);
-		}
-		.markmap-foreign code {
-			color: var(--mindmap-code-color) !important;
-			background-color: var(--mindmap-code-bg) !important;
-			border-radius: var(--code-border-radius);
-			padding: var(--code-padding);
-			font-size: var(--code-font-size);
-		}
+		${MARKMAP_PALETTE}
 	</style>
 </head>
 <body>
 	<svg id="markmap">
-		<use xlink:href=""><title>${title}</title></use>
-		<desc>${escapedDesc}</desc>
+		<use xlink:href=""><title>${escapedTitle}</title></use>
+		<desc>${escapeHtml($markdownSource)}</desc>
 	</svg>
-	<script src="https://cdn.jsdelivr.net/npm/d3"><\/script>
-	<script src="https://cdn.jsdelivr.net/npm/markmap-view"><\/script>
+	<script src="https://cdn.jsdelivr.net/npm/d3@7"><\/script>
+	<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18"><\/script>
 	<script>
-		const root=${root};
-		const{Markmap, loadCSS, loadJS, deriveOptions}=window.markmap;
-		const maxWidth=${maxWidth};
-		const styles=\`
-			div{padding-bottom:0.12em!important}
-			a {text-decoration:none}
-			foreignObject {overflow:visible}
-			strong{color:var(--text-color); font-size:0.95em!important; font-weight:600!important;}
-			.hide, .hide *{color:var(--text-color)!important; opacity:0.2;}
-			.hide {background-color:var(--mindmap-hide-bg); border-radius:1px; transition:opacity 0.2s ease;}
-			.hide:hover {opacity:0.8;}
-			.hide img {opacity:0}
-			img[alt=h-25]{height:25px}
-			img[alt=h-50]{height:50px}
-			img[alt=h-75]{height:75px}
-			img[alt=h-100]{height:100px}
-			img[alt=h-125]{height:125px}
-			img[alt=h-150]{height:150px}
-			img[alt=h-175]{height:175px}
-			img[alt=h-200]{height:200px}
-			blockquote {
-				width:${widthBlockquote}px!important;
-				white-space:normal;
-				text-align:justify;
-				font-size:0.8em;
-				line-height:1em;
-				border:1px solid var(--mindmap-blockquote-border);
-				padding:10px;
-				border-radius:4px;
-				${marginLeftBlockquote}
-			}
-			aside{font-size:0.8em; display:inline-block!important; font-weight:normal; vertical-align:top}
-			cite {font-style:inherit; font-family:serif; font-size:0.97em}
-			code {
-				color:var(--mindmap-code-color);
-				background-color:var(--mindmap-code-bg);
-				border-radius:var(--code-border-radius);
-				padding:var(--code-padding);
-				font-size:var(--code-font-size);
-			}
-			.markmap-foreign>div {
-				width: max-content!important;
-				max-width: var(--markmap-max-width)!important;
-			}
-			.katex-html{display:none}
-			${katexHack}
-			${style.replaceAll('"','\\"')}
-		\`;
-		const options={
-			duration:0,
-			style:id=>styles,
-			maxWidth:maxWidth,
-			spacingVertical:8,
-			paddingX:15,
-			autoFit:true
+		const { Markmap, deriveOptions } = window.markmap;
+		const styles = ${toScriptJSON(styles)};
+		const options = {
+			duration: 0,
+			style: () => styles,
+			maxWidth: ${toScriptJSON(maxWidth)},
+			spacingVertical: 8,
+			paddingX: 15,
+			autoFit: true
 		};
-		const optionsJSON = deriveOptions({
-			color:${branchColors},
-			colorFreezeLevel:${colorFreezeLevel}
-		});
-		const optionsFull = ${colorFreezeLevel} > 0 ? {...options, ...optionsJSON} : options;
-		Markmap.create("#markmap", optionsFull, root);
+		const colorFreezeLevel = ${toScriptJSON(colorFreezeLevel)};
+		const colorOptions = colorFreezeLevel > 0
+			? deriveOptions({ color: ${toScriptJSON(branchColors())}, colorFreezeLevel })
+			: {};
+		Markmap.create("#markmap", { ...options, ...colorOptions }, ${toScriptJSON(mindmapRoot)});
 	<\/script>
 </body>
 </html>`;
-		const file = new File([templateHtml], "mindmap.html", {
-			type: "text/plain;charset=utf-8"
-		});
-		saveAs(file);
+	}
+
+	function saveFile(content, name) {
+		saveAs(new File([content], name, { type: 'text/plain;charset=utf-8' }));
 	}
 
 	$: if ($mindmapSaveAsSvg) {
-		mindMapSaveAsSvgCreateFile();
-		mindmapSaveAsSvg.update(n => false)
+		saveFile(createSVG(), 'mindmap.svg');
+		mindmapSaveAsSvg.set(false);
 	}
 
 	$: if ($mindmapSaveAsHtml) {
-		mindMapSaveAsHtmlCreateFile();
-		mindmapSaveAsHtml.update(n => false)
+		saveFile(createHTML(), 'mindmap.html');
+		mindmapSaveAsHtml.set(false);
 	}
-
-	function handleKeydown(event) {
-		if (!$show && event.key === 'r') {
-			toggleAutomaticResize();
-		}
-	}
-
-	// Add touch event listeners for mobile devices
-	function handleTouchStart(event) {
-		// Just using the click handler as it already handles double-tap detection
-	}
-
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div bind:clientWidth={w} bind:clientHeight={h} style="width:100vw; height:100vh">
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<svg id="markmap" bind:this={mindmap} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-		role="presentation"
-		style="width:100%; height:100%; overflow: visible;" on:click={handleHide} on:touchstart={handleTouchStart}>
-	</svg>
-</div>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<svg id="markmap" bind:this={mindmap} xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	role="presentation"
+	style="width:100%; height:100%; overflow: visible;" on:click={handleClick}>
+</svg>
 <style>
 	svg {
 		z-index: 0;

@@ -8,150 +8,100 @@
 </script>
 
 <script>
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { get } from 'svelte/store';
     import { show, markdownSource } from './stores.js';
-    import Turndown from 'turndown';
+    import { OPTION_KEYS } from './options.js';
 
-    let textArea;
+    const yamlProperty = new RegExp(`(${OPTION_KEYS.join('|')}):`, 'g');
+
     let editor;
     let jar;
-    let CodeJar;
-    let firefoxVersion = 0;
-    let unsubscribeFromMarkdownSource = () => {};
-    let syncingFromJar = false;
-    let fallbackValue = "";
+    let turndownService;
 
-    const my = editor => {
-        let code = editor.textContent;
-        code = code.replace(/:(.*)_(.*?):/g, ':$1@underscore$2:');
-        code = code.replace(/:(.*)_(.*?):/g, ':$1@underscore$2:');
-        code = code.replace(/:(.*)_(.*?):/g, ':$1@underscore$2:');
+    const highlight = editor => {
+        // Keep the underscores of :emoji_codes: from being highlighted as emphasis
+        let code = editor.textContent.replace(/:[\w+-]+:/g, emoji => emoji.replaceAll('_', '@underscore'));
         code = hljs.highlight(code, {
             language: 'markdown',
             ignoreUnescapedHTML: false
         }).value;
-        // Les caractères < et > sont échappés par highlight.js : on travaille donc sur &lt; et &gt;
+        // highlight.js escapes < and >, so match &lt; and &gt;
         code = code
-            .replace(/(theme:|maxWidth:|mw:|initialExpandLevel:|colorFreezeLevel:|focusOnBranch:|automaticResize:|openLinksInNewTab:|disableWarningMessage:|showMenu:|curves:|title:)/g,
-                '<span class="hljs-yaml-property">$1</span>')
+            .replace(yamlProperty, '<span class="hljs-yaml-property">$1:</span>')
             .replace(/\\\\/g, '<span class="language-xml"><span class="hljs-tag">\\\\</span></span>')
             .replace(/&lt;!--(.*?)--&gt;/g, '<span class="hljs-comment">&lt;!--$1--&gt;</span>')
             .replace(/&lt;!--(\s*?)fold(\s*?)--&gt;/g, '<span class="language-xml"><span class="hljs-special-tag">&lt;!--$1fold$2--&gt;</span></span>');
-        code = code.replace(/@underscore/g, '_');
-        editor.innerHTML = code;
+        editor.innerHTML = code.replace(/@underscore/g, '_');
     };
 
     onMount(() => {
-        let mounted = true;
-        fallbackValue = get(markdownSource);
+        let unsubscribe;
 
-        (async () => {
-            ({ CodeJar } = await import("codejar"));
-
-            if (!mounted) {
+        // CodeJar touches `window` when its module loads, so it can't be imported
+        // during prerendering
+        import('codejar').then(({ CodeJar }) => {
+            if (!editor) {
                 return;
             }
-
-            jar = CodeJar(editor, my, {
+            jar = CodeJar(editor, highlight, {
                 history: true,
                 autoclose: { open: `(["`, close: `)]"` },
             });
-            // CodeJar does not highlight on creation: seed the content through
-            // updateCode so the initial markdown is syntax-highlighted too
-            jar.updateCode(get(markdownSource), false);
+            // The editor sits outside Svelte's reactivity: sync it with the store by hand.
+            // Subscribing also seeds the content (CodeJar does not highlight on creation).
+            unsubscribe = markdownSource.subscribe(code => {
+                if (code != jar.toString()) {
+                    jar.updateCode(code, false);
+                }
+            });
             jar.onUpdate(code => {
                 if (code != get(markdownSource)) {
-                    syncingFromJar = true;
                     markdownSource.set(code);
-                    syncingFromJar = false;
                 }
             });
-
-            // L'éditeur est isolé de la réactivité de Svelte : on synchronise à la main
-            unsubscribeFromMarkdownSource = markdownSource.subscribe(code => {
-                if (!jar) {
-                    if (code != fallbackValue) {
-                        fallbackValue = code;
-                    }
-                    return;
-                }
-
-                if (syncingFromJar || code == jar.toString()) {
-                    return;
-                }
-
-                jar.updateCode(code, false);
-            });
-
             // Capture phase so this runs before CodeJar's own paste handler
             editor.addEventListener('paste', handlePaste, true);
-
-            const matchFirefoxVersion =
-                window.navigator.userAgent.match(/Firefox\/([0-9]+)\./);
-            firefoxVersion = matchFirefoxVersion
-                ? parseInt(matchFirefoxVersion[1])
-                : 0;
-        })();
+        });
 
         return () => {
-            mounted = false;
-            unsubscribeFromMarkdownSource();
-            if (editor) {
-                editor.removeEventListener('paste', handlePaste, true);
-            }
-            if (jar) {
-                jar.destroy();
-            }
+            unsubscribe?.();
+            editor?.removeEventListener('paste', handlePaste, true);
+            jar?.destroy();
         };
     });
 
-    $: if ($show == true) {
-        setTimeout(function () {
-            // Svelte 5 renders anchor comments around blocks, so textArea.firstChild
-            // is not necessarily the editable element: target it explicitly.
-            const target = editor || textArea?.querySelector("textarea");
-            if (!target) {
-                return;
-            }
-            target.focus();
-            if (editor && firefoxVersion >= 136) {
-                editor.setAttribute("contenteditable", "true");
-            }
-        }, 0);
+    $: if ($show && editor) {
+        tick().then(() => editor.focus());
     }
 
     // Firefox (>= 136 in particular) can expose an HTML-only clipboard: convert it to
     // Markdown ourselves. When plain text is available, CodeJar's own handler is fine.
-    function handlePaste(event) {
-        const clipboardData = event.clipboardData || window.clipboardData;
-        if (!clipboardData || !jar) {
-            return;
-        }
-
-        const types = Array.from(clipboardData.types || []);
-        if (types.includes('text/plain') || !types.includes('text/html')) {
-            return;
-        }
-
-        const turndownService = new Turndown({
-            headingStyle: 'atx',
-            hr: '---',
-            bulletListMarker: '-',
-            codeBlockStyle: 'fenced',
-            emDelimiter: '*'
-        });
-        const pastedText = turndownService
-            .turndown(clipboardData.getData('text/html'))
-            .replace(/\r\n?/g, '\n');
-
-        if (!pastedText) {
+    async function handlePaste(event) {
+        const types = Array.from(event.clipboardData?.types || []);
+        if (!jar || types.includes('text/plain') || !types.includes('text/html')) {
             return;
         }
 
         event.preventDefault();
-
+        const html = event.clipboardData.getData('text/html');
         const pos = jar.save();
+
+        if (!turndownService) {
+            const { default: Turndown } = await import('turndown');
+            turndownService = new Turndown({
+                headingStyle: 'atx',
+                hr: '---',
+                bulletListMarker: '-',
+                codeBlockStyle: 'fenced',
+                emDelimiter: '*'
+            });
+        }
+        const pastedText = turndownService.turndown(html).replace(/\r\n?/g, '\n');
+        if (!pastedText) {
+            return;
+        }
+
         const start = Math.min(pos.start, pos.end);
         const end = Math.max(pos.start, pos.end);
         const code = jar.toString();
@@ -166,30 +116,16 @@
     }
 </script>
 
-<div bind:this={textArea}>
-    {#await CodeJar}
-        <div>Editor loading...</div>
-    {:then}
-        <div
-            bind:this={editor}
-            contenteditable="true"
-            spellcheck="false"
-            class:hidden={!$show}
-            class="editor">
-        </div>
-    {:catch error}
-        <textarea
-            value={fallbackValue}
-            on:input={(event) => markdownSource.set(event.currentTarget.value)}
-            rows="20"
-            cols="50"
-            class:hidden={!$show}></textarea>
-    {/await}
+<div
+    bind:this={editor}
+    contenteditable="true"
+    spellcheck="false"
+    class:hidden={!$show}
+    class="editor">
 </div>
 
 <style>
-    textarea,
-    :global(.editor) {
+    .editor {
         font-size: 14px;
         bottom: 4.25em;
         left: 1.75em;
@@ -201,7 +137,7 @@
         background-color: var(--editor-bg);
     }
     @media screen and (max-width:768px) {
-        textarea, :global(.editor) {
+        .editor {
             width: 85%;
             height: 35vh;
             bottom: 3em;
@@ -210,14 +146,12 @@
 
     /* display:none rather than visibility:hidden: Safari paints the resize grip
        of a resizable element in its own layer and keeps drawing it when the
-       element is merely invisible, leaving the handle floating over the map.
-       The bare `textarea` selector used to live here too, which permanently
-       hid the fallback editor CodeJar falls back to. */
-    :global(.hidden) {
+       element is merely invisible, leaving the handle floating over the map. */
+    .hidden {
         display: none;
     }
 
-    :global(.editor) {
+    .editor {
         border: 0.2px solid var(--border-color);
         border-radius: 6px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);

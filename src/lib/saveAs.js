@@ -3,8 +3,7 @@
 // That package is unmaintained and ships a dual-package hazard: its "main" is a
 // CommonJS/UMD bundle exposing only a default export, while its "module" entry is
 // ESM exposing only a named `saveAs`. Vite resolves "main" for SSR and "module"
-// for the browser, so no single import form satisfies both. It also assigned
-// window.saveAs as a side effect, which is what Mindmap.svelte used to rely on.
+// for the browser, so no single import form satisfies both.
 //
 // Everything we need is a Blob/File plus an anchor with the download attribute.
 
@@ -25,5 +24,3 @@ export function saveAs(blob, filename) {
 	// Give the browser time to start the download before releasing the URL
 	setTimeout(() => URL.revokeObjectURL(url), 40000);
 }
-
-export default saveAs;

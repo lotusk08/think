@@ -1,67 +1,55 @@
 <script>
+    import { browser } from "$app/env";
+    import { fade, fly } from "svelte/transition";
+    import { quintOut } from "svelte/easing";
     import {
         show,
-        baseURL,
         mindmapSaveAsSvg,
         mindmapSaveAsHtml,
         markdownSource,
-        defaultTemplate,
-        theme,
-        initialDemoContent // Import the shared initial content
+        theme
     } from "./stores.js";
-    export let source;
-    export let disableWarningMessage;
-    import url from "./url.js";
-    import { fade, fly } from "svelte/transition";
-    import { quintOut } from "svelte/easing";
+    import { initialDemoContent, defaultTemplate } from "./content.js";
 
     export let showMenu;
+    export let disableWarningMessage;
 
+    // ?m=0 in the URL hides the menu
+    const hiddenByURL = browser && new URLSearchParams(location.search).get("m") === "0";
     const disableMenu = !showMenu;
+    if (hiddenByURL) {
+        showMenu = false;
+    }
 
-    let urlToShare;
-    let encodageHash;
-    let menu;
-    let currentTheme;
+    let showNotification = false;
+    let notificationMessage = "";
 
-    // Subscribe to theme changes
-    theme.subscribe(value => {
-        currentTheme = value;
-    });
-
-    function toggleTheme() {
-        theme.toggle();
+    function toastNotification(message) {
+        notificationMessage = message;
+        showNotification = true;
+        setTimeout(() => (showNotification = false), 2000);
     }
 
     function menuEdit() {
         showNotification = false;
-        show.update((n) => true);
+        show.set(true);
     }
 
     function menuView() {
-        show.update((n) => false);
+        show.set(false);
     }
 
     function menuSaveAsSvg() {
-        mindmapSaveAsSvg.update((n) => true);
+        mindmapSaveAsSvg.set(true);
     }
 
     function menuSaveAsHtml() {
-        mindmapSaveAsHtml.update((n) => true);
-    }
-
-    function menuHide() {
-        showMenu = showMenu ? false : true;
-    }
-    if ($url && $url.searchParams && $url.searchParams.get("m") == 0) {
-        showMenu = false;
+        mindmapSaveAsHtml.set(true);
     }
 
     function menuShare() {
-        toastNotification();
-        encodageHash = encodeURI(source);
-        urlToShare = $baseURL + "/#" + encodageHash;
-        navigator.clipboard.writeText(urlToShare);
+        toastNotification("Link copied!");
+        navigator.clipboard.writeText(location.origin + location.pathname + "#" + encodeURI($markdownSource));
     }
 
     function menuReset() {
@@ -85,11 +73,7 @@
         sessionStorage.clear();
 
         if (window.caches) {
-            caches.keys().then(function (names) {
-                for (let name of names) {
-                    caches.delete(name);
-                }
-            });
+            caches.keys().then((names) => names.forEach((name) => caches.delete(name)));
         }
 
         markdownSource.set(defaultTemplate);
@@ -97,63 +81,40 @@
         toastNotification("Data cleared!");
     }
 
+    const shortcuts = {
+        e: menuEdit,
+        s: menuSaveAsSvg,
+        h: menuSaveAsHtml,
+        l: menuShare,
+        m: () => (showMenu = !showMenu),
+        t: theme.toggle
+    };
+
     function handleKeydown(event) {
-        if (!$show) {
-            if (event.key === "e") {
-                event.preventDefault();
-                menu.style.display = "flex";
-                menuEdit();
-            }
-            if (event.key === "s") {
-                menu.style.display = "flex";
-                menuSaveAsSvg();
-            }
-            if (event.key === "h") {
-                menu.style.display = "flex";
-                menuSaveAsHtml();
-            }
-            if (event.key === "l") {
-                menu.style.display = "flex";
-                menuShare();
-            }
-            if (event.key == "m") {
-                menuHide();
-            }
-            if (event.key == "t") {
-                toggleTheme();
-            }
-        } else {
+        // Leave browser shortcuts (Cmd/Ctrl+S, Cmd/Ctrl+L…) alone
+        if (event.metaKey || event.ctrlKey || event.altKey) {
+            return;
+        }
+        if ($show) {
             if (event.key === "Escape") {
-                menu.style.display = "flex";
                 menuView();
             }
+        } else if (Object.hasOwn(shortcuts, event.key)) {
+            // Keeps the "e" that opened the editor from being typed into it
+            event.preventDefault();
+            shortcuts[event.key]();
         }
     }
 
     function beforeunload(event) {
         // No confirmation prompt when disableWarningMessage is true in the YAML,
         // when showMenu is false, or when the URL carries m=0
-        if (
-            disableWarningMessage === true ||
-            disableMenu ||
-            ($url && $url.searchParams && $url.searchParams.get("m") == 0)
-        ) {
+        if (disableWarningMessage === true || disableMenu || hiddenByURL) {
             return;
         }
 
         event.preventDefault();
         return (event.returnValue = "");
-    }
-
-    let showNotification = false;
-    let notificationMessage = "Link copied!";
-
-    function toastNotification(message = "Link copied!") {
-        notificationMessage = message;
-        showNotification = true;
-        setTimeout(function () {
-            showNotification = false;
-        }, 2000);
     }
 </script>
 
@@ -163,7 +124,7 @@
         class="menu-container"
         in:fly={{ y: 20, duration: 400, easing: quintOut }}
     >
-        <nav id="menu" bind:this={menu} class:edit-mode={$show}>
+        <nav id="menu" class:edit-mode={$show}>
             <div class="menu-items">
                 {#if $show}
                     <button on:click|preventDefault={menuView} class="menu-btn" aria-label="Show only the mind map" title="Show only the mind map (Escape)">
@@ -185,12 +146,11 @@
                 </button>
                 <button
                     class="theme-toggle menu-btn"
-                    on:click={toggleTheme}
-                    on:keydown={(e) => e.key === 'Enter' && toggleTheme()}
-                    aria-label={currentTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
-                    title={currentTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+                    on:click={theme.toggle}
+                    aria-label={$theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+                    title={$theme === 'light' ? 'Switch to dark theme (t)' : 'Switch to light theme (t)'}
                 >
-                    {#if currentTheme === "light"}
+                    {#if $theme === "light"}
                         <i class="fas fa-moon"></i>
                     {:else}
                         <i class="fas fa-sun"></i>
