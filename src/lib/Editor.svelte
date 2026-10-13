@@ -220,6 +220,29 @@
         display: none;
     }
 
+    /* Slides in from the left and back out; `display` flips only once the
+       slide is over (browsers without allow-discrete just show/hide) */
+    @media screen and (prefers-reduced-motion: no-preference) {
+        .editor-panel {
+            transition:
+                transform 0.3s cubic-bezier(0.215, 0.61, 0.355, 1),
+                opacity 0.3s ease,
+                display 0.3s allow-discrete;
+        }
+
+        .editor-panel.hidden {
+            transform: translateX(calc(-100% - 2em));
+            opacity: 0;
+        }
+
+        @starting-style {
+            .editor-panel {
+                transform: translateX(calc(-100% - 2em));
+                opacity: 0;
+            }
+        }
+    }
+
     @media print {
         .editor-panel {
             display: none;

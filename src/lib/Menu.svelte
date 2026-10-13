@@ -1,8 +1,7 @@
 <script>
     import { tick } from "svelte";
     import { browser } from "$app/env";
-    import { fade, fly } from "svelte/transition";
-    import { quintOut } from "svelte/easing";
+    import { slideFade } from "./motion.js";
     import { show, exportRequest, markdownSource, theme, notification, notify } from "./stores.js";
 
     export let showMenu;
@@ -116,21 +115,19 @@
 
 <svelte:window on:keydown={handleKeydown} on:click={handleWindowClick} on:beforeunload={beforeunload} />
 {#if showMenu}
-    <div
-        class="menu-container"
-        in:fly={{ y: 20, duration: 400, easing: quintOut }}
-    >
-        <nav id="menu">
+    <div class="menu-container">
+        <nav id="menu" transition:slideFade={{ y: 20, duration: 300 }}>
             <div class="menu-items">
-                {#if $show}
-                    <button on:click|preventDefault={menuView} class="menu-btn" aria-label="Show only the mind map" title="Show only the mind map (Escape)">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                {:else}
-                    <button on:click|preventDefault={menuEdit} class="menu-btn" aria-label="Edit the mind map" title="Edit the mind map (e)">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                {/if}
+                <button
+                    on:click|preventDefault={$show ? menuView : menuEdit}
+                    class="menu-btn"
+                    aria-label={$show ? "Show only the mind map" : "Edit the mind map"}
+                    title={$show ? "Show only the mind map (Escape)" : "Edit the mind map (e)"}
+                >
+                    {#key $show}
+                        <i class="fas {$show ? 'fa-eye' : 'fa-pen'}" in:slideFade={{ x: $show ? 8 : -8 }}></i>
+                    {/key}
+                </button>
                 <div class="export" bind:this={exportContainer}>
                     <button
                         bind:this={exportButton}
@@ -152,7 +149,8 @@
                             tabindex="-1"
                             aria-label="Export"
                             on:keydown={handleExportKeydown}
-                            transition:fly={{ y: 6, duration: 150 }}
+                            in:slideFade={{ y: 8, duration: 180 }}
+                            out:slideFade={{ y: 8, duration: 120 }}
                         >
                             {#each exportItems as item}
                                 <button role="menuitem" class="export-item" title={item.hint} on:click={() => runExport(item)}>
@@ -169,11 +167,9 @@
                     aria-label={$theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
                     title={$theme === 'light' ? 'Switch to dark theme (t)' : 'Switch to light theme (t)'}
                 >
-                    {#if $theme === "light"}
-                        <i class="fas fa-moon"></i>
-                    {:else}
-                        <i class="fas fa-sun"></i>
-                    {/if}
+                    {#key $theme}
+                        <i class="fas {$theme === 'light' ? 'fa-moon' : 'fa-sun'}" in:slideFade={{ y: 8 }}></i>
+                    {/key}
                 </button>
             </div>
         </nav>
@@ -181,8 +177,8 @@
         {#if $notification}
             <div
                 id="shareNotification"
-                in:fly={{ y: 5, duration: 1000}}
-                out:fade
+                in:slideFade={{ y: 8, duration: 250 }}
+                out:slideFade={{ y: 8, duration: 200 }}
             >
                 {$notification}
             </div>

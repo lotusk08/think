@@ -4,6 +4,7 @@
 	import * as markmap from 'markmap-view';
 	import { saveAs } from './saveAs.js';
 	import { escapeHtml } from './markdown.js';
+	import { motionMs } from './motion.js';
 	import {
 		exportRequest,
 		markdownSource,
@@ -116,7 +117,6 @@
 
 	function markmapOptions() {
 		const options = {
-			duration: 0,
 			maxWidth,
 			spacingVertical: 15,
 			paddingX: 20,
@@ -174,13 +174,24 @@
 			styleElement.textContent = css;
 		}
 
-		if (mm) {
+		const created = !mm;
+		mm ??= new Markmap(mindmap, markmapOptions());
+		await instantly(async () => {
 			// setData is async: fit only once the new layout has been rendered,
 			// otherwise the zoom transform is computed from a stale/empty rect
 			await mm.setData(root, markmapOptions());
-			if (automaticResize) mm.fit();
-		} else {
-			mm = Markmap.create(mindmap, markmapOptions(), root);
+			if (created || automaticResize) mm.fit();
+		});
+	}
+
+	// Folding, unfolding and refitting animate; re-renders while typing (or
+	// recolouring) are instant so the map never lags behind the editor
+	async function instantly(task) {
+		mm.options.duration = 0;
+		try {
+			await task();
+		} finally {
+			mm.options.duration = motionMs(300);
 		}
 	}
 
@@ -188,7 +199,7 @@
 
 	// Branch colors come from the theme: recolor (without refitting) when it changes
 	const unsubscribeTheme = theme.subscribe(() => {
-		if (mm && colorFreezeLevel > 0) mm.setData(null, markmapOptions());
+		if (mm && colorFreezeLevel > 0) instantly(() => mm.setData(null, markmapOptions()));
 	});
 
 	// `curves: false`: markmap only draws curves, so straighten every link path it
