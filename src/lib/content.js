@@ -25,7 +25,7 @@ Markdown is used to create branches
   - **PDF**: print-ready vector file, \\\\ pick _Save as PDF_ when printing (_keyboard shortcut: \`p\`_)
   - **SVG**: static vector image (_keyboard shortcut: \`s\`_)
   - **HTML**: interactive web page (_keyboard shortcut: \`h\`_)
-  - **Copy link**: a **sharing link** \\\\ for the mind map (_keyboard shortcut: \`l\`_)
+  - **Link**: copies a **sharing link** \\\\ for the mind map (_keyboard shortcut: \`l\`_)
     - Add \`?m=0\` to the URL to hide the menu
   - You can store your text \\\\ on **Obsidian** or on [Stackedit](https://stackedit.io) \\\\ and display it with Think tree
     - It's recommended to save the text \\\\ of your mind map somewhere so \\\\ you can edit it later <!--fold-->
