@@ -24,6 +24,8 @@
 	export let automaticResize;
 
 	const { Markmap, loadCSS, loadJS, deriveOptions } = markmap;
+	// Names the SVG/HTML exports and the PDF
+	$: mapTitle = String(title || 'Mindmap');
 	const isMobile = typeof navigator !== 'undefined' &&
 		/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 	const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
@@ -167,7 +169,7 @@
 			styleElement.id = 'mindmap-style';
 			mindmap.append(titleElement, styleElement);
 		}
-		titleElement.textContent = title;
+		titleElement.textContent = mapTitle;
 		// Restyling the whole page on every keystroke is costly: only when it changed
 		const css = liveCSS();
 		if (styleElement.textContent !== css) {
@@ -320,14 +322,14 @@
 			.replaceAll('<div>', '<div xmlns="http://www.w3.org/1999/xhtml">');
 		return '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">' +
 			`<svg id="markmap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="${mindmap.className.baseVal}" style="width:100%; height:100%;" viewBox="${x - 20} ${y - 20} ${width + 40} ${height + 40}">` +
-			`<use xlink:href=""><title>${escapeHtml(String(title))}</title></use>` +
+			`<use xlink:href=""><title>${escapeHtml(mapTitle)}</title></use>` +
 			`<desc>${escapeHtml($markdownSource)}</desc>` +
 			content +
 			'</svg>';
 	}
 
 	function createHTML() {
-		const escapedTitle = escapeHtml(String(title));
+		const escapedTitle = escapeHtml(mapTitle);
 		const styles = `
 			div{padding-bottom:0.12em!important}
 			strong{color:var(--text-color); font-size:0.95em!important; font-weight:600!important;}
@@ -433,7 +435,7 @@
 		group.removeAttribute('transform');
 		mindmap.setAttribute('viewBox', `${x - margin} ${y - margin} ${width + 2 * margin} ${height + 2 * margin}`);
 		// Browsers name the PDF after the page title
-		document.title = String(title);
+		document.title = mapTitle;
 	}
 
 	function handleAfterPrint() {

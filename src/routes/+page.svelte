@@ -39,6 +39,11 @@
 	$: mindmapSource = replaceMarkdown(emojify($markdownSource));
 </script>
 
+<svelte:head>
+	<!-- The tab follows the front matter `title:` -->
+	<title>{options.title || 'Think tree'}</title>
+</svelte:head>
+
 <Menu {showMenu} {disableWarningMessage} />
 
 <main>

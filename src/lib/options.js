@@ -15,7 +15,7 @@ const THEME_STYLES = {
 const MATH_PADDING = "div{padding-bottom:0.2em!important;}";
 
 const DEFAULTS = {
-	title: "Mindmap",
+	title: "", // unset: callers pick their own fallback
 	style: "",
 	initialExpandLevel: -1,
 	openLinksInNewTab: false,
